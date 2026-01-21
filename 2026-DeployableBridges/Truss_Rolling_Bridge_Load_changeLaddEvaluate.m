@@ -2,6 +2,7 @@ clear all;
 clc;
 close all;
 
+%% Define Geometry, HSS 4X3X5/16 A500 Grade C Fy=50ksi
 H=2;
 HA=2;
 W=2;
@@ -10,12 +11,12 @@ l=0.3;
 
 N=8;
 
-barA=0.01;
-barE=2*10^9;
-panel_E=200*10^9;
+barA=0.0023; % 3.52 in^2
+barE=2*10^11;
+panel_E=2*10^11;
 panel_t=0.05;
-panel_v=0.2;
-activeBarE=80*10^9;
+panel_v=0.3;
+activeBarE=2*10^11; % 80*10^9;
 
 % I=1/12*0.01^4;
 % kspr=3*barE*I/L2*100000;
@@ -67,7 +68,7 @@ plots=Plot_Truss_Rolling_Bridge();
 plots.assembly=assembly;
 
 % We will plot for the Rolling Bridge
-plots.displayRange=[-0.5;16.5;-0.5;2.5;-0.5;2.5]; 
+plots.displayRange=[-0.5;2*N+0.5;-0.5;2.5;-0.5;2.5]; 
 
 plots.viewAngle1=20;
 plots.viewAngle2=20;
@@ -245,6 +246,205 @@ fprintf('Total CST panel weight: %.2f N\n', W_cst);
 fprintf('Total self-weight of the bridge: %.2f N\n', W_total);
 fprintf('-----------------------------\n');
 
+
+
+%% Distributed load along full length on bridge bottom
+nr=Solver_NR_Loading;
+nr.assembly=assembly;
+
+%% Supports 
+coords=node.coordinates_mat;
+tol=1e-9;
+
+nodeNum=size(coords,1);
+nodeNumVec=(1:nodeNum)';
+
+% identify four bottom corners by coordinates
+xmin=min(coords(:,1));
+xmax=max(coords(:,1));
+
+isBottom=abs(coords(:,3)-0)<tol;
+isY0=abs(coords(:,2)-0)<tol;
+isYW=abs(coords(:,2)-W)<tol;
+isXmin=abs(coords(:,1)-xmin)<tol;
+isXmax=abs(coords(:,1)-xmax)<tol;
+
+A=find(isBottom & isXmin & isY0, 1);   % left-front-bottom corner
+B=find(isBottom & isXmin & isYW, 1);   % left-back-bottom corner
+C=find(isBottom & isXmax & isY0, 1);   % right-front-bottom corner
+D=find(isBottom & isXmax & isYW, 1);   % right-back-bottom corner
+
+if any(cellfun(@isempty, {A,B,C,D}))
+    error('Failed to find four bottom corner nodes. Check geometry/tol/W.');
+end
+
+fprintf('Corner supports: A=%d, B=%d, C=%d, D=%d\n', A, B, C, D);
+
+% Stabilization like your original:
+% lock uy for all nodes (3 dof per node: [ux uy uz] => [0 1 0])
+nr.supp = [nodeNumVec, zeros(nodeNum,1), ones(nodeNum,1), zeros(nodeNum,1)];
+
+% fully fix the 4 corners (ux=uy=uz=1)
+nr.supp(A,2:4)=1;
+nr.supp(B,2:4)=1;
+nr.supp(C,2:4)=1;
+nr.supp(D,2:4)=1;
+
+
+force=1000;   % N  (IMPORTANT: interpreted as "total load added PER increment")
+step=50;     % number of increments (final total load = force*step)
+
+%  1) Bridge length along x 
+L_total=L*N;              % m
+q=force/L_total;       % N/m  (line load PER increment, consistent with "force per increment")
+
+% 2) Find bottom-edge nodes (z=0 and y=0 or y=W)
+% coords=node.coordinates_mat;
+% tol=1e-9;
+
+isBottomZ=abs(coords(:,3)-0)<tol;
+isEdgeY0=abs(coords(:,2)-0)<tol;
+isEdgeYW=abs(coords(:,2)-W)<tol;
+
+bottom=find(isBottomZ&(isEdgeY0|isEdgeYW));   % bottom edge nodes (full length)
+
+if numel(bottom)<2
+    error('Bottom node set is too small. Check y/z criteria or geometry.');
+end
+
+% 3) Group bottom nodes by x-section (robust to two-edge nodes at same x)
+x_all=coords(bottom,1);
+
+tolX=1e-9;
+x_round=round(x_all/tolX)*tolX;
+
+[xu, ~, g]=unique(x_round, 'stable');   % xu: unique x positions (not necessarily sorted)
+[xu, ord]=sort(xu);                    % sort x sections
+g=ord(g);                      % remap group IDs after sorting xu
+
+nsec=numel(xu);
+if nsec<2
+    error('Not enough x-sections to compute tributary lengths.');
+end
+
+% 4) Tributary length per x-section
+ell_sec=zeros(nsec,1);
+for s=1:nsec
+    if s==1
+        ell_sec(s)=(xu(s+1)-xu(s))/2;
+    elseif s==nsec
+        ell_sec(s)=(xu(s)-xu(s-1))/2;
+    else
+        ell_sec(s)=(xu(s+1)-xu(s-1))/2;
+    end
+end
+
+% --- 5) Equivalent nodal forces PER increment (sum over all bottom nodes = -force) ---
+Fz_base=zeros(numel(bottom),1);
+for s=1:nsec
+    ids=find(g==s);          % indices within 'bottom' at same x-section
+    Fsec=-q*ell_sec(s);       % total resultant at this x-section (PER increment)
+    Fz_base(ids)=Fsec/numel(ids);   % split among nodes at same x (usually 2: y=0 and y=W)
+end
+
+fprintf('Check sum(Fz_base) = %.6f N (target = %.6f N)\n', sum(Fz_base), -force);
+
+% 6) Assign load table: [nodeID, Fx, Fy, Fz] 
+nr.load=[bottom(:), zeros(numel(bottom),2), Fz_base(:)];
+
+% 7) Nonlinear solver settings
+nr.increStep=step;
+nr.iterMax =50;
+nr.tol=1e-5;
+
+
+% 8) Solve
+Uhis=nr.Solve;
+
+
+
+%  0) Final total external load 
+P_final=force*step;    % N (final total vertical load)
+
+% Optional sanity checks
+fprintf('Postproc: Per-increment load = %.6f N, steps = %d, P_final = %.6f N\n', ...
+        force, step, P_final);
+fprintf('Postproc: Sum of nr.load(:,4) = %.6f N (should be about -force per increment)\n', ...
+        sum(nr.load(:,4)));
+
+% 1) Final displacement state
+U_end=squeeze(Uhis(end,:,:));   % [nodeNum x 3]
+
+% 2) Bar strain and internal axial force
+truss_strain=bar.Solve_Strain(node, U_end);                         % strain in each bar
+internal_force=truss_strain.*(bar.E_vec).*(bar.A_vec);            % axial force in each bar (N)
+
+% 3) Max internal force
+[maxBarForce, idxMax]=max(abs(internal_force));
+fprintf('Max |bar force|=%.6f N at bar #%d\n', maxBarForce, idxMax);
+
+% 4) Ultimate capacity (simple tensile stress limit)
+sigma_u=300e6;          % Pa
+barFailureForce=sigma_u*barA; % N
+
+% 5) Total bar length 
+barLtotal=sum(bar.L0_vec);
+
+% 6) Stiffness evaluation (midspan bottom nodes)
+x_mid =0.5*L_total;
+
+% nearest x-section
+[~, sMid]=min(abs(xu-x_mid));
+mid_ids_local = find(g==sMid);        % indices within 'bottom' at that x-section
+mid_nodes=bottom(mid_ids_local);      % actual node IDs at midspan bottom
+
+% average downward displacement at those nodes
+Uaverage=-mean(U_end(mid_nodes,3));   % positive downward
+
+% stiffness based on final total load
+Kstiff=P_final/Uaverage;            % N/m
+
+fprintf('Midspan nodes used for stiffness: %s\n', mat2str(mid_nodes(:)'));
+fprintf('Uaverage = %.6e m, Kstiff = %.6e N/m\n', Uaverage, Kstiff);
+
+% 7) Stress-like visualization field
+% This keeps your original plotting logic: scale so the critical bar reaches barFailureForce
+bar_stress=truss_strain .* (bar.E_vec) * (barFailureForce / maxBarForce);
+plots.Plot_Shape_Bar_Stress(bar_stress);
+
+% 8) Failure load prediction by linear scaling 
+% Assuming internal forces scale linearly with load:
+loadatfail=P_final * (barFailureForce / maxBarForce);   % N
+
+fprintf('Failure load is %.3f kN\n', loadatfail/1000);
+fprintf('Total bar length is %.3f m\n', barLtotal);
+fprintf('Stiffness is %.3e N/m\n', Kstiff);
+
+% 9) Optional efficiency (if W_bar exists)
+if exist('W_bar','var') && ~isempty(W_bar) && W_bar>0
+    loadEff = loadatfail / W_bar;
+    fprintf('Load efficiency (loadatfail/W_bar) = %.6f\n', loadEff);
+end
+
+% 10) Optional: report top critical bars
+nb=numel(internal_force);
+topk=min(10, nb);
+[~, ord]=sort(abs(internal_force), 'descend');
+
+fprintf('Worst %d bars by |axial force|:\n', topk);
+for ii=1:topk
+    b=ord(ii);
+    fprintf('#%d: Bar %d, N = %+ .3f kN\n', ii, b, internal_force(b)/1e3);
+end
+
+% 11) Optional: compute actual axial stress in each bar (Pa)
+bar_sigma=internal_force ./ bar.A_vec;   % Pa
+sigma_max=max(abs(bar_sigma));
+fprintf('Max |axial stress| = %.3f MPa\n', sigma_max/1e6);
+
+
+
+
 %% Set up the self actuation solver
 nr=Solver_NR_Loading;
 
@@ -261,20 +461,21 @@ nr.supp(4,2:4)=ones(1,3);
 nr.supp(6*N-3,2:4)=ones(1,3); % 21  45
 nr.supp(6*N-1,2:4)=ones(1,3); % 23  47
 
-force=1000;
+P_total=10000;
 step=10;
-nr.load=[3*N-3,0,0,-force/2; % 9  21
-         3*N-1,0,0,-force/2; % 11  23
-         ];
 
-% Set up the total loading step
+nr.load=[];
+for i=1:N-1
+    nr.load=[nr.load;
+        3+(i-1)*6 0 0 -P_total/2/(N-1);
+        5+(i-1)*6 0 0 -P_total/2/(N-1);
+        ];
+end
+
 nr.increStep=step;
-% Set up the maximum iteration
 nr.iterMax=30;
-% Set up the tolorence
 nr.tol=10^-5;
 
-% Solve for the deformation history
 Uhis=nr.Solve();
 
 % Plot the deformed shape
@@ -285,18 +486,15 @@ plots.fileName="Rolling_Bridge_Load.gif";
 plots.Plot_Deformed_His(Uhis);
 
 % Failure load computation
-truss_strain=bar.Solve_Strain(node,squeeze(Uhis(end,:,:)));
+truss_strain=bar.Solve_Strain(node,squeeze(Uhis(end,:,:))*50);
 internal_force=(truss_strain).*(bar.E_vec).*(bar.A_vec);
-
 
 % Find the maximum bar internal force
 [maxBarForce,index]=max(abs(internal_force));
 
-
 % Find failure force for the bar
 sigma_u=300*10^6;
 barFailureForce=sigma_u*barA;
-
 
 % Find total bar length
 barLtotal=sum(bar.L0_vec);
@@ -305,12 +503,9 @@ barLtotal=sum(bar.L0_vec);
 Uaverage=-mean(squeeze(Uhis(end,[3*N-3,3*N-1],3)));
 Kstiff=step*force/Uaverage;
 
-
 % Plot failure stress
 bar_stress=(truss_strain).*(bar.E_vec)*barFailureForce/maxBarForce;
 plots.Plot_Shape_Bar_Stress(bar_stress)
-
-
 
 % Find the relationship betweeen the bar internal forces and load
 loadatfail=force*step*barFailureForce/maxBarForce;

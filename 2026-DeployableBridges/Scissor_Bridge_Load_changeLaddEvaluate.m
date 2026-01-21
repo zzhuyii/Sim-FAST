@@ -2,16 +2,16 @@ clear all;
 clc;
 close all;
 
-%% Initialize the scissor 
+%% Initialize the scissor, HSS 4X3X5/16 A500 Grade C Fy=50ksi
 N=8;
 H=2; % (m)
 L=2; % (m)
 
-barA=0.01; 
-barE=2*10^9; % (Pa)
-panel_E=200*10^9;
+barA=0.0023; % 3.52 in^2
+barE=2*10^11;
+panel_E=2*10^11;
 panel_t=0.05;
-panel_v=0.2;
+panel_v=0.3;
 
 I=1/12*0.01^4; 
 barL=sqrt(H^2+L^2);
@@ -70,7 +70,7 @@ assembly.rot_spr_4N=rotSpr4N;
 %% Define Plotting Functions
 plots=Plot_Scissor_Bridge; 
 plots.assembly=assembly;
-plots.displayRange=[-0.5; 16.5; -0.5; 2.5; -0.5; 2.5]; 
+plots.displayRange=[-0.5; 2*N+0.5; -0.5; 2.5; -0.5; 2.5]; 
 
 plots.viewAngle1=20;
 plots.viewAngle2=20;
@@ -181,7 +181,7 @@ for i=1:N
 end
 
 rotNum=size(rotSpr3N.node_ijk_mat,1);
-rotSpr3N.rot_spr_K_vec=kspr*ones(rotNum,1);
+rotSpr3N.rot_spr_K_vec=kspr*ones(rotNum,1)*1000; % *1000;
 
 plots.Plot_Shape_Node_Number;
 plots.Plot_Shape_RotSpr_3N_Number;
@@ -206,7 +206,7 @@ for i=1:N
 end
 
 rotNum4N=size(rotSpr4N.node_ijkl_mat,1);
-rotSpr4N.rot_spr_K_vec=10000*ones(rotNum4N,1);
+rotSpr4N.rot_spr_K_vec=100000*ones(rotNum4N,1); % 100000000*
 plots.Plot_Shape_RotSpr_4N_Number;
 assembly.Initialize_Assembly;
 
@@ -269,70 +269,75 @@ fprintf('Total self-weight of the bridge: %.2f N\n', W_total);
 fprintf('-----------------------------\n');
 
 
-%% Set up solver   
-nr = Solver_NR_Loading;
-nr.assembly = assembly;
+
+%% Set up solver  (Distributed load along full length on bridge bottom)
+nr=Solver_NR_Loading;
+nr.assembly=assembly;
 
 nr.supp = [1    1 1 1;
            2    1 1 1;
+           3    1 1 1;
+           4    1 1 1;
            38*N/2+1    1 1 1; 
            38*N/2+2    1 1 1; 
+           38*N/2+3    1 1 1; 
+           38*N/2+4    1 1 1; 
            ];
 
+% Target total vertical load
+P_total=10000;     % N, total downward load applied at final increment
+step=20;       % number of increments
 
-force=100;
-step=10;
+nr.load=[];
+for i=1:N-1
+    nr.load=[nr.load;
+        20+(i-1)*19 0 0 -P_total/2/(N-1);
+        21+(i-1)*19 0 0 -P_total/2/(N-1);];
+end
 
-nr.increStep = 10;
-nr.load=[38*N/4+1 0 0 -force/2; 
-         38*N/4+2 0 0 -force/2]; 
+nr.increStep=step;
+nr.iterMax=30;
+nr.tol=1e-4;
 
-nr.iterMax = 20;
-nr.tol = 10^-5;
+Uhis=nr.Solve;
 
-Uhis = nr.Solve();  
-
-
-U_end = squeeze(Uhis(end, :, :));  
-plots.Plot_Deformed_Shape(20*U_end);
-
+plots.Plot_Deformed_Shape(squeeze(Uhis(end,:,:))*50)
 
 
-% Failure load computation
+% Post-processing: bar strain, internal force, failure load, stiffness
 truss_strain=bar.Solve_Strain(node,squeeze(Uhis(end,:,:)));
 internal_force=(truss_strain).*(bar.E_vec).*(bar.A_vec);
 
+
 % Find the maximum bar internal force
 [maxBarForce,index]=max(abs(internal_force));
-% [maxBarForce,index]=max(internal_force);
 
 
 % Find failure force for the bar
-sigma_u=300*10^6;
-barFailureForce=sigma_u*barA;
+sigma_u=300*10^6; % ultimate stress, 300 MPa
+barFailureForce=sigma_u*barA; % N
 
 
 % Find total bar length
 barLtotal=sum(bar.L0_vec);
 
-
 % Find Stiffness
 Uaverage=-mean(squeeze(Uhis(end,[38*N/4+1,38*N/4+2],3)));
-Kstiff=step*force/Uaverage;
-
+Kstiff=step*P_total/Uaverage;
 
 % Plot failure stress
-bar_stress=(truss_strain).*(bar.E_vec)*barFailureForce/maxBarForce;
+bar_stress=(truss_strain).*(bar.E_vec);
 plots.Plot_Shape_Bar_Stress(bar_stress)
 
-
 % Find the relationship betweeen the bar internal forces and load
-loadatfail=force*step*barFailureForce/maxBarForce;
+loadatfail=P_total*step*barFailureForce/maxBarForce;
 fprintf('Failure load is %d kN \n',  loadatfail/1000);
 fprintf('Total bar length is %d m \n',  barLtotal);
 fprintf('Stiffness is %d N/m \n',  Kstiff);
 fprintf('Total bars: %d\n', barNum);
 
+loadEff=loadatfail/W_bar;
+fprintf('Load efficiency (FailureLoad/SelfWeight) = %.3f \n', loadEff);
 
 
 %% Evaluate Member
@@ -361,7 +366,7 @@ r=0.5*sqrt(A./pi);
 r=max(r,1e-9); % prevent division by zero
 
 % 3) yield stress
-Fy=250e6;             % Pa（need to be changed）
+Fy=345e6;             % Pa（50ksi）
 
 % 4) evaluate
 passYN=false(nb,1);

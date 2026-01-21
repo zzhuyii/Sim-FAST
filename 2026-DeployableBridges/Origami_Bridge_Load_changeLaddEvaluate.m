@@ -3,18 +3,18 @@ close all
 clc
 tic
 
-%% Define Geometry
+%% Define Geometry, HSS 4X3X5/16 A500 Grade C Fy=50ksi
 L=2;
 W=4;
 H=2;
 gap=0;
 N=4;
 
-barA=0.01;
-barE=2*10^9;
-panel_E=200*10^9;
+barA=0.0023; % 3.52 in^2
+barE=2*10^11;
+panel_E=2*10^11;
 panel_t=0.05;
-panel_v=0.2;
+panel_v=0.3;
 
 node=Elements_Nodes;
 
@@ -53,7 +53,7 @@ assembly.rot_spr_4N=rot_spr_4N;
 %% Define Plotting Functions
 plots=Plot_Kirigami_Truss;
 plots.assembly=assembly;
-plots.displayRange=[-0.5; 16.5; -0.5; W+0.5; -0.5; H+0.5];
+plots.displayRange=[-0.5; 4*N+0.5; -0.5; W+0.5; -0.5; H+0.5];
 
 plots.viewAngle1=20;
 plots.viewAngle2=20;
@@ -225,10 +225,10 @@ fprintf('Total self-weight: %.2f N\n', W_total);
 fprintf('-----------------------------\n');
 
 
-%% Set up solver
+
+%% Set up solver  (Distributed load along full length on bridge bottom)
 nr=Solver_NR_Loading;
 nr.assembly=assembly;
-
 
 nr.supp=[nr.supp;
      2      1 1 1;
@@ -236,21 +236,28 @@ nr.supp=[nr.supp;
      N*9+2  1 1 1;
      N*9+3  1 1 1;];
 
-force=1000;
-step=10;
+% Target total vertical load
+P_total=10000;     % N, total downward load applied at final increment
+step=10;       % number of increments
 
-nr.load=[9*N/2+2,0,0,-force/2;
-         9*N/2+3,0,0,-force/2];
-
+nr.load=[];
+for i=1:N-1
+    nr.load=[nr.load;
+        6+(i-1)*9 0 0 -P_total/2/(N-1);
+        8+(i-1)*9 0 0 -P_total/2/(N-1);
+        11+(i-2)*9 0 0 -P_total/2/(N-1);
+        12+(i-2)*9 0 0 -P_total/2/(N-1);
+        ];
+end
 
 nr.increStep=step;
 nr.iterMax=20;
-nr.tol=1*10^-5;
+nr.tol=1e-5;
 
 Uhis=nr.Solve;
 
-toc
-plots.Plot_Deformed_Shape(squeeze(Uhis(end,:,:)))
+
+plots.Plot_Deformed_Shape(squeeze(Uhis(end,:,:))*50)
 
 
 % Failure load computation
@@ -259,7 +266,6 @@ internal_force=(truss_strain).*(bar.E_vec).*(bar.A_vec);
 
 % Find the maximum bar internal force
 [maxBarForce,index]=max(abs(internal_force));
-% maxBarForce=max(internal_force);
 
 
 % Find failure force for the bar
@@ -272,7 +278,7 @@ barLtotal=sum(bar.L0_vec);
 
 % Find Stiffness
 Uaverage=-mean(squeeze(Uhis(end,[9*N/2+2,9*N/2+3],3)));
-Kstiff=step*force/Uaverage;
+Kstiff=step*P_total/Uaverage;
 
 
 % Plot failure stress
@@ -281,11 +287,14 @@ plots.Plot_Shape_Bar_Stress(bar_stress)
 
 
 % Find the relationship betweeen the bar internal forces and load
-loadatfail=force*step*barFailureForce/maxBarForce;
+loadatfail=P_total*step*barFailureForce/maxBarForce;
 fprintf('Failure load is %d kN \n',  loadatfail/1000);
 fprintf('Total bar length is %d m \n',  barLtotal);
 fprintf('Stiffness is %d N/m \n',  Kstiff);
 fprintf('Total bars: %d\n', barNum);
+
+loadEff=loadatfail/W_bar;
+fprintf('Load efficiency (FailureLoad/SelfWeight) = %.3f \n', loadEff);
 
 
 
@@ -315,7 +324,7 @@ r=0.5*sqrt(A./pi);
 r=max(r,1e-9); % prevent division by zero
 
 % 3) yield stress
-Fy=250e6;             % Pa（need to be changed）
+Fy=345e6;             % Pa（50ksi）
 
 % 4) evaluate
 passYN=false(nb,1);

@@ -3,62 +3,51 @@ close all
 clc
 tic
 
-%% Define Geometry
-N=8;
-L=1.8; 
+%% Define Geometry, HSS 4X3X5/16 A500 Grade C Fy=50ksi
+N=8; 
+L=2; 
 W=2;
 H=2;
-w=0.2;
 gap=0;
 
-barA=0.01;
-barE=2*10^9;
-panel_E=200*10^9;
+barA=0.0023; % 3.52 in^2
+barE=2*10^11;
+panel_E=2*10^11;
 panel_t=0.05;
-panel_v=0.2;
+panel_v=0.3;
 
 
 node=Elements_Nodes;
 node.coordinates_mat=[node.coordinates_mat;
-        -w, 0, 0; % 1
-        -w, W, 0; % 2
-        -w, 0, H; % 3
-        -w, W, H;]; % 4
+    0, 0, 0; % 1
+    0, W, 0; % 2
+    0, 0, H; % 3
+    0, W, H; % 4
+    ]; 
 
 for i=1:N
     node.coordinates_mat=[node.coordinates_mat;
-        (w+L)*(i-1), 0, 0;
-        (w+L)*(i-1), W, 0;
-        (w+L)*(i-1), 0, H;
-        (w+L)*(i-1), W, H;
+        (L)*(i-1)+L/2, 0, 0;
+        (L)*(i-1)+L/2, 0, gap;
+        (L)*(i-1)+L/2, W, 0;
+        (L)*(i-1)+L/2, W, gap;
 
-        (w+L)*(i-1)+L/2, 0, 0;
-        (w+L)*(i-1)+L/2, 0, gap;
-        (w+L)*(i-1)+L/2, W, 0;
-        (w+L)*(i-1)+L/2, W, gap;
+        (L)*(i-1)+L/2, 0, H;
+        (L)*(i-1)+L/2, gap, H;
+        (L)*(i-1)+L/2, W, H;
+        (L)*(i-1)+L/2, W, H-gap;
 
-        (w+L)*(i-1)+L/2, 0, H;
-        (w+L)*(i-1)+L/2, gap, H;
-        (w+L)*(i-1)+L/2, W, H;
-        (w+L)*(i-1)+L/2, W, H-gap;
+        (L)*(i-1)+L/2, W/2, 0;
+        (L)*(i-1)+L/2, W/2, H;
+        (L)*(i-1)+L/2, 0, H/2;
+        (L)*(i-1)+L/2, W, H/2;
 
-        (w+L)*(i-1)+L/2, W/2, 0;
-        (w+L)*(i-1)+L/2, W/2, H;
-        (w+L)*(i-1)+L/2, 0, H/2;
-        (w+L)*(i-1)+L/2, W, H/2;
-
-        (w+L)*(i-1)+L, 0, 0;
-        (w+L)*(i-1)+L, W, 0;
-        (w+L)*(i-1)+L, 0, H;
-        (w+L)*(i-1)+L, W, H;];
-end
-
-node.coordinates_mat=[node.coordinates_mat;
-        (w+L)*N, 0, 0;
-        (w+L)*N, W, 0;
-        (w+L)*N, 0, H;
-        (w+L)*N, W, H;
+        (L)*(i-1)+L, 0, 0;
+        (L)*(i-1)+L, W, 0;
+        (L)*(i-1)+L, 0, H;
+        (L)*(i-1)+L, W, H;
         ];
+end
 
 
 %% Define assembly
@@ -75,7 +64,7 @@ assembly.rot_spr_4N=rot_spr_4N;
 %% Define Plotting Functions
 plots=Plot_Kirigami_Truss;
 plots.assembly=assembly;
-plots.displayRange=[-0.5; 16.5; -0.5; 2.5; -0.5; 2.5];
+plots.displayRange=[-0.5; 2*N+0.5; -0.5; 2.5; -0.5; 2.5];
 
 plots.viewAngle1=20;
 plots.viewAngle2=20;
@@ -84,27 +73,15 @@ plots.Plot_Shape_Node_Number;
 
 
 %% Define Triangle
-for i=1:N+1
-     cst.node_ijk_mat=[cst.node_ijk_mat;
-        20*(i-1)+1    20*(i-1)+3    20*(i-1)+7;
-        20*(i-1)+1    20*(i-1)+5    20*(i-1)+7;
-        20*(i-1)+3    20*(i-1)+4    20*(i-1)+8;
-        20*(i-1)+3    20*(i-1)+7    20*(i-1)+8;
-        20*(i-1)+2    20*(i-1)+4    20*(i-1)+6;
-        20*(i-1)+4    20*(i-1)+6    20*(i-1)+8;
-        20*(i-1)+3    20*(i-1)+4    20*(i-1)+8;
-        20*(i-1)+1    20*(i-1)+2    20*(i-1)+6;
-        20*(i-1)+1    20*(i-1)+5    20*(i-1)+6;];
-end
-
 for i=1:N
      cst.node_ijk_mat=[cst.node_ijk_mat;
-        20*(i-1)+5    20*(i-1)+6    20*(i-1)+17;
-        20*(i-1)+5    20*(i-1)+9    20*(i-1)+17;
-        20*(i-1)+11    20*(i-1)+6    20*(i-1)+17;
-        20*(i-1)+9    20*(i-1)+21    20*(i-1)+17;
-        20*(i-1)+11    20*(i-1)+22    20*(i-1)+17;
-        20*(i-1)+21    20*(i-1)+22    20*(i-1)+17;];
+        16*(i-1)+1    16*(i-1)+2    16*(i-1)+13;
+        16*(i-1)+1    16*(i-1)+5    16*(i-1)+13;
+        16*(i-1)+2    16*(i-1)+7    16*(i-1)+13;
+        16*(i-1)+13    16*(i-1)+17    16*(i-1)+18;
+        16*(i-1)+6    16*(i-1)+13    16*(i-1)+17;
+        16*(i-1)+8    16*(i-1)+13    16*(i-1)+18;
+        ];
 end
 
 cstNum=size(cst.node_ijk_mat,1);
@@ -115,66 +92,73 @@ cst.v_vec=panel_v*ones(cstNum,1);
 plots.Plot_Shape_CST_Number;
 
 %% Define bar
+bar.node_ij_mat=[bar.node_ij_mat;
+    1 2;
+    1 3;
+    3 4;
+    2 4;
+    ];
+
 for i=1:N
     bar.node_ij_mat=[bar.node_ij_mat;
-        20*(i-1)+5   20*(i-1)+10;
-        20*(i-1)+19  20*(i-1)+10;
-        20*(i-1)+5   20*(i-1)+19;
-        20*(i-1)+7   20*(i-1)+13;
-        20*(i-1)+7   20*(i-1)+19;
-        20*(i-1)+13   20*(i-1)+19;
-        20*(i-1)+13   20*(i-1)+23;
-        20*(i-1)+19   20*(i-1)+23;
-        20*(i-1)+19   20*(i-1)+21;
-        20*(i-1)+10   20*(i-1)+21; %10
+        16*(i-1)+3   16*(i-1)+15;
+        16*(i-1)+1  16*(i-1)+15;
+        16*(i-1)+1   16*(i-1)+5;
+        16*(i-1)+5   16*(i-1)+15;
+        16*(i-1)+3   16*(i-1)+9;
+        16*(i-1)+9  16*(i-1)+15;
+        16*(i-1)+10   16*(i-1)+15;
+        16*(i-1)+10   16*(i-1)+19;
+        16*(i-1)+15   16*(i-1)+19;
+        16*(i-1)+15  16*(i-1)+17;
+        16*(i-1)+6   16*(i-1)+15;
+        16*(i-1)+6   16*(i-1)+17;
 
-        20*(i-1)+7   20*(i-1)+14;
-        20*(i-1)+7   20*(i-1)+18;
-        20*(i-1)+14   20*(i-1)+18;
-        20*(i-1)+8   20*(i-1)+15;
-        20*(i-1)+15   20*(i-1)+18;
-        20*(i-1)+8   20*(i-1)+18;
-        20*(i-1)+14   20*(i-1)+23;
-        20*(i-1)+18   20*(i-1)+23;
-        20*(i-1)+18   20*(i-1)+24;
-        20*(i-1)+15   20*(i-1)+24; %20
+        16*(i-1)+3   16*(i-1)+9;
+        16*(i-1)+3  16*(i-1)+14;
+        16*(i-1)+9   16*(i-1)+14;
+        16*(i-1)+4   16*(i-1)+14;
+        16*(i-1)+4   16*(i-1)+11;
+        16*(i-1)+11  16*(i-1)+14;
+        16*(i-1)+10   16*(i-1)+14;
+        16*(i-1)+10   16*(i-1)+19;
+        16*(i-1)+14   16*(i-1)+19;
+        16*(i-1)+14  16*(i-1)+20;
+        16*(i-1)+12   16*(i-1)+14;
+        16*(i-1)+12   16*(i-1)+20;
 
-        20*(i-1)+8   20*(i-1)+16;
-        20*(i-1)+16   20*(i-1)+20;
-        20*(i-1)+8   20*(i-1)+20;
-        20*(i-1)+24   20*(i-1)+16;
-        20*(i-1)+24   20*(i-1)+20;
-        20*(i-1)+6   20*(i-1)+20;
-        20*(i-1)+6   20*(i-1)+12;
-        20*(i-1)+12   20*(i-1)+20;
-        20*(i-1)+22   20*(i-1)+12;
-        20*(i-1)+22   20*(i-1)+20; %30
+        16*(i-1)+2   16*(i-1)+16;
+        16*(i-1)+2  16*(i-1)+7;
+        16*(i-1)+7   16*(i-1)+16;
+        16*(i-1)+4   16*(i-1)+16;
+        16*(i-1)+4   16*(i-1)+11;
+        16*(i-1)+11  16*(i-1)+16;
+        16*(i-1)+12   16*(i-1)+16;
+        16*(i-1)+12   16*(i-1)+20;
+        16*(i-1)+16   16*(i-1)+20;
+        16*(i-1)+16  16*(i-1)+18;
+        16*(i-1)+8   16*(i-1)+16;
+        16*(i-1)+8   16*(i-1)+18;
 
-        20*(i-1)+5   20*(i-1)+9;
-        20*(i-1)+9   20*(i-1)+17;
-        20*(i-1)+5   20*(i-1)+17;
-        20*(i-1)+6   20*(i-1)+11;
-        20*(i-1)+11   20*(i-1)+17;
-        20*(i-1)+6   20*(i-1)+17;
-        20*(i-1)+11   20*(i-1)+22;
-        20*(i-1)+17   20*(i-1)+22;
-        20*(i-1)+9   20*(i-1)+21;
-        20*(i-1)+17   20*(i-1)+21; %40
+        16*(i-1)+1   16*(i-1)+5;
+        16*(i-1)+1  16*(i-1)+13;
+        16*(i-1)+5   16*(i-1)+13;
+        16*(i-1)+2   16*(i-1)+13;
+        16*(i-1)+2   16*(i-1)+7;
+        16*(i-1)+7  16*(i-1)+13;
+        16*(i-1)+8   16*(i-1)+13;
+        16*(i-1)+8   16*(i-1)+18;
+        16*(i-1)+13   16*(i-1)+18;
+        16*(i-1)+13  16*(i-1)+17;
+        16*(i-1)+6   16*(i-1)+13;
+        16*(i-1)+6   16*(i-1)+17;
 
-        20*(i-1)+1    20*(i-1)+5;
-        20*(i-1)+2    20*(i-1)+6;
-        20*(i-1)+3    20*(i-1)+7;
-        20*(i-1)+4    20*(i-1)+8; % add new bars
-
+        16*(i-1)+17   16*(i-1)+19;
+        16*(i-1)+17  16*(i-1)+18;
+        16*(i-1)+19   16*(i-1)+20;
+        16*(i-1)+18   16*(i-1)+20;
         ];
 end
-
-bar.node_ij_mat=[bar.node_ij_mat;
-    20*N+1   20*N+5;
-    20*N+2   20*N+6;
-    20*N+3   20*N+7;
-    20*N+4   20*N+8;
-    ];
 
 barNum=size(bar.node_ij_mat,1);
 bar.A_vec=barA*ones(barNum,1);
@@ -185,64 +169,44 @@ plots.Plot_Shape_Bar_Number();
 for i=1:N    
     rot_spr_4N.node_ijkl_mat=[
         rot_spr_4N.node_ijkl_mat;
-        20*(i-1)+5  20*(i-1)+1  20*(i-1)+7  20*(i-1)+2;
-        20*(i-1)+1  20*(i-1)+7  20*(i-1)+3  20*(i-1)+8;
-        20*(i-1)+7  20*(i-1)+3  20*(i-1)+8  20*(i-1)+4;
-        20*(i-1)+3  20*(i-1)+4  20*(i-1)+8  20*(i-1)+6;
-        20*(i-1)+2  20*(i-1)+4  20*(i-1)+6  20*(i-1)+8;
-        20*(i-1)+4  20*(i-1)+2  20*(i-1)+6  20*(i-1)+1;
-        20*(i-1)+2  20*(i-1)+6  20*(i-1)+1  20*(i-1)+5;
-        20*(i-1)+6  20*(i-1)+1  20*(i-1)+5  20*(i-1)+7; %8
+        16*(i-1)+1  16*(i-1)+3  16*(i-1)+15  16*(i-1)+9;
+        16*(i-1)+3  16*(i-1)+1  16*(i-1)+15  16*(i-1)+5;
+        16*(i-1)+17  16*(i-1)+19  16*(i-1)+15  16*(i-1)+10;
+        16*(i-1)+19  16*(i-1)+17  16*(i-1)+15  16*(i-1)+6;
+        16*(i-1)+3  16*(i-1)+9  16*(i-1)+15  16*(i-1)+19;
+        16*(i-1)+1  16*(i-1)+5  16*(i-1)+15  16*(i-1)+17;
+        16*(i-1)+17  16*(i-1)+6  16*(i-1)+18  16*(i-1)+1;
+        16*(i-1)+19  16*(i-1)+10  16*(i-1)+15  16*(i-1)+3; %8
 
-        20*(i-1)+1  20*(i-1)+7  20*(i-1)+5  20*(i-1)+19;
-        20*(i-1)+5  20*(i-1)+7  20*(i-1)+19  20*(i-1)+13;
-        20*(i-1)+7  20*(i-1)+13  20*(i-1)+19  20*(i-1)+23;
-        20*(i-1)+19  20*(i-1)+23  20*(i-1)+21  20*(i-1)+27;
-        20*(i-1)+5  20*(i-1)+10  20*(i-1)+19  20*(i-1)+21;
-        20*(i-1)+7  20*(i-1)+5  20*(i-1)+19  20*(i-1)+10;
-        20*(i-1)+13  20*(i-1)+19  20*(i-1)+23  20*(i-1)+21;
-        20*(i-1)+10  20*(i-1)+19  20*(i-1)+21  20*(i-1)+23; %16
+        16*(i-1)+4  16*(i-1)+3  16*(i-1)+14  16*(i-1)+9;
+        16*(i-1)+3  16*(i-1)+14  16*(i-1)+9  16*(i-1)+19;
+        16*(i-1)+3  16*(i-1)+4  16*(i-1)+14  16*(i-1)+11;
+        16*(i-1)+4  16*(i-1)+11  16*(i-1)+14  16*(i-1)+20;
+        16*(i-1)+20  16*(i-1)+19  16*(i-1)+14  16*(i-1)+10;
+        16*(i-1)+19  16*(i-1)+14  16*(i-1)+10  16*(i-1)+3;
+        16*(i-1)+19  16*(i-1)+20  16*(i-1)+14  16*(i-1)+12;
+        16*(i-1)+20  16*(i-1)+12  16*(i-1)+14  16*(i-1)+4;
 
-        20*(i-1)+3  20*(i-1)+8  20*(i-1)+7  20*(i-1)+18;
-        20*(i-1)+8  20*(i-1)+7  20*(i-1)+18  20*(i-1)+14;
-        20*(i-1)+7  20*(i-1)+8  20*(i-1)+18  20*(i-1)+15;
-        20*(i-1)+8  20*(i-1)+15  20*(i-1)+18  20*(i-1)+24;
-        20*(i-1)+7  20*(i-1)+14  20*(i-1)+18  20*(i-1)+23;
-        20*(i-1)+14  20*(i-1)+18  20*(i-1)+23  20*(i-1)+24;
-        20*(i-1)+15  20*(i-1)+18  20*(i-1)+24  20*(i-1)+23;
-        20*(i-1)+18  20*(i-1)+23  20*(i-1)+24  20*(i-1)+28; %24
+        16*(i-1)+2  16*(i-1)+4  16*(i-1)+16  16*(i-1)+11;
+        16*(i-1)+4  16*(i-1)+11  16*(i-1)+16  16*(i-1)+20;
+        16*(i-1)+4  16*(i-1)+2  16*(i-1)+16  16*(i-1)+7;
+        16*(i-1)+2  16*(i-1)+16  16*(i-1)+7  16*(i-1)+18;
+        16*(i-1)+18  16*(i-1)+20  16*(i-1)+16  16*(i-1)+12;
+        16*(i-1)+20  16*(i-1)+12  16*(i-1)+16  16*(i-1)+4;
+        16*(i-1)+20  16*(i-1)+18  16*(i-1)+16  16*(i-1)+8;
+        16*(i-1)+18  16*(i-1)+16  16*(i-1)+8  16*(i-1)+2;
 
-        20*(i-1)+4  20*(i-1)+6  20*(i-1)+8  20*(i-1)+20;
-        20*(i-1)+6  20*(i-1)+8  20*(i-1)+20  20*(i-1)+16;
-        20*(i-1)+8  20*(i-1)+6  20*(i-1)+20  20*(i-1)+12;
-        20*(i-1)+8  20*(i-1)+16  20*(i-1)+20  20*(i-1)+24;
-        20*(i-1)+6  20*(i-1)+12  20*(i-1)+20  20*(i-1)+22;
-        20*(i-1)+24  20*(i-1)+20  20*(i-1)+22  20*(i-1)+12;
-        20*(i-1)+16  20*(i-1)+20  20*(i-1)+24  20*(i-1)+22;
-        20*(i-1)+26  20*(i-1)+24  20*(i-1)+22  20*(i-1)+20; %32
-
-        20*(i-1)+1  20*(i-1)+5  20*(i-1)+6  20*(i-1)+17;
-        20*(i-1)+6  20*(i-1)+5  20*(i-1)+17  20*(i-1)+9;
-        20*(i-1)+5  20*(i-1)+6  20*(i-1)+17  20*(i-1)+11;
-        20*(i-1)+5  20*(i-1)+9  20*(i-1)+17  20*(i-1)+21;
-        20*(i-1)+6  20*(i-1)+17  20*(i-1)+11  20*(i-1)+22;
-        20*(i-1)+11  20*(i-1)+17  20*(i-1)+22  20*(i-1)+21;
-        20*(i-1)+9  20*(i-1)+17  20*(i-1)+21  20*(i-1)+22;
-        20*(i-1)+17  20*(i-1)+21  20*(i-1)+22  20*(i-1)+26; %40
+        16*(i-1)+2  16*(i-1)+1  16*(i-1)+13  16*(i-1)+5;
+        16*(i-1)+1  16*(i-1)+13  16*(i-1)+5  16*(i-1)+17;
+        16*(i-1)+1  16*(i-1)+2  16*(i-1)+13  16*(i-1)+7;
+        16*(i-1)+2  16*(i-1)+7  16*(i-1)+13  16*(i-1)+18;
+        16*(i-1)+17  16*(i-1)+18  16*(i-1)+13  16*(i-1)+8;
+        16*(i-1)+18  16*(i-1)+8  16*(i-1)+13  16*(i-1)+2;
+        16*(i-1)+18  16*(i-1)+17  16*(i-1)+13  16*(i-1)+6;
+        16*(i-1)+17  16*(i-1)+6  16*(i-1)+13  16*(i-1)+1;
         ];
         
 end
-
-rot_spr_4N.node_ijkl_mat=[
-    rot_spr_4N.node_ijkl_mat;
-    20*N+5  20*N+1  20*N+7  20*N+2;
-    20*N+1  20*N+7  20*N+3  20*N+8;
-    20*N+7  20*N+3  20*N+8  20*N+4;
-    20*N+3  20*N+4  20*N+8  20*N+6;
-    20*N+2  20*N+4  20*N+6  20*N+8;
-    20*N+4  20*N+2  20*N+6  20*N+1;
-    20*N+2  20*N+6  20*N+1  20*N+5;
-    20*N+6  20*N+1  20*N+5  20*N+7;];
 
 
 rotNum=size(rot_spr_4N.node_ijkl_mat);
@@ -250,13 +214,13 @@ rotNum=rotNum(1);
 
 rot_spr_4N.rot_spr_K_vec=ones(rotNum,1);
 
-factor=100;
-for i=1:N+1
-    rot_spr_4N.rot_spr_K_vec((i-1)*40+2)=factor*rot_spr_4N.rot_spr_K_vec((i-1)*40+2);
-    rot_spr_4N.rot_spr_K_vec((i-1)*40+4)=factor*rot_spr_4N.rot_spr_K_vec((i-1)*40+4);
-    rot_spr_4N.rot_spr_K_vec((i-1)*40+6)=factor*rot_spr_4N.rot_spr_K_vec((i-1)*40+6);
-    rot_spr_4N.rot_spr_K_vec((i-1)*40+8)=factor*rot_spr_4N.rot_spr_K_vec((i-1)*40+8);
-end
+% factor=100;
+% for i=1:N+1
+%     rot_spr_4N.rot_spr_K_vec((i-1)*40+2)=factor*rot_spr_4N.rot_spr_K_vec((i-1)*40+2);
+%     rot_spr_4N.rot_spr_K_vec((i-1)*40+4)=factor*rot_spr_4N.rot_spr_K_vec((i-1)*40+4);
+%     rot_spr_4N.rot_spr_K_vec((i-1)*40+6)=factor*rot_spr_4N.rot_spr_K_vec((i-1)*40+6);
+%     rot_spr_4N.rot_spr_K_vec((i-1)*40+8)=factor*rot_spr_4N.rot_spr_K_vec((i-1)*40+8);
+% end
 
 plots.Plot_Shape_Node_Number;
 plots.Plot_Shape_Spr_Number;
@@ -314,36 +278,39 @@ fprintf('CST weight: %.2f N\n', W_cst);
 fprintf('Total self-weight: %.2f N\n', W_total);
 
 
-%% Set up solver
+%% Set up solver + Distributed load on bottom nodes (full-length)
 nr=Solver_NR_Loading;
 nr.assembly=assembly;
 
 nr.supp=[1 1 1 1;
          2 1 1 1;
-         20*N+5 1 1 1;
-         20*N+6 1 1 1;];
+         16*N+1 1 1 1;
+         16*N+2 1 1 1;];
 
-force=1000; 
+P_total=10000;  % N (total vertical load)
 step=10;
 
-
-Uhis=[];
-for k=1:step
-    nr.load=[N*10+1,0,0,-force*k/4;
-             N*10+2,0,0,-force*k/4;
-             N*10+5,0,0,-force*k/4;
-             N*10+6,0,0,-force*k/4];
-    
-    nr.increStep=1;
-    nr.iterMax=20;
-    nr.tol=1*10^-5;
-
-    Uhis(k,:,:)=squeeze(nr.Solve());
+nr.load=[];
+for i=1:N-1
+    nr.load=[nr.load;
+        5+(i-1)*16 0 0 -P_total/2/(N-1);
+        7+(i-1)*16 0 0 -P_total/2/(N-1);
+        17+(i-1)*16 0 0 -P_total/2/(N-1);
+        18+(i-1)*16 0 0 -P_total/2/(N-1);
+        ];
 end
 
-plots.Plot_Deformed_Shape(squeeze(Uhis(end,:,:))*20)
+nr.increStep=1;
+nr.iterMax=20;
+nr.tol=1*10^-5;
+
+Uhis=nr.Solve;
+          
+
+plots.Plot_Deformed_Shape(squeeze(Uhis(end,:,:))*50)
 
 
+% Post-processing: bar strain, internal force, failure load, stiffness
 truss_strain=bar.Solve_Strain(node,squeeze(Uhis(end,:,:)));
 internal_force=(truss_strain).*(bar.E_vec).*(bar.A_vec);
 
@@ -361,24 +328,24 @@ barFailureForce=sigma_u*barA; % N
 barLtotal=sum(bar.L0_vec);
 
 % Find Stiffness
-Uaverage=-mean(squeeze(Uhis(end,[N*10+1,N*10+2,N*10+5,N*10+6],3)));
-Kstiff=step*force/Uaverage;
+Uaverage=-mean(squeeze(Uhis(end,[N*8+1,N*8+2],3)));
+Kstiff=step*P_total/Uaverage;
 
 
 % Plot failure stress
-bar_stress=(truss_strain).*(bar.E_vec)*barFailureForce/maxBarForce;
+bar_stress=(truss_strain).*(bar.E_vec);
 plots.Plot_Shape_Bar_Stress(bar_stress)
 
 
-
 % Find the relationship betweeen the bar internal forces and load
-loadatfail=force*step*barFailureForce/maxBarForce;
+loadatfail=P_total*step*barFailureForce/maxBarForce;
 fprintf('Failure load is %d kN \n',  loadatfail/1000);
 fprintf('Total bar length is %d m \n',  barLtotal);
 fprintf('Stiffness is %d N/m \n',  Kstiff);
 fprintf('Total bars: %d\n', barNum);
 
-loadEff=loadatfail/W_bar
+loadEff=loadatfail/W_bar;
+fprintf('Load efficiency (FailureLoad/SelfWeight) = %.3f \n', loadEff);
 
 
 
@@ -400,7 +367,7 @@ if ~isfield(bar,'L0_vec')||isempty(bar.L0_vec)
 else
     L0_vec=bar.L0_vec(:);
 end
-K =1.0;                
+K=1.0;                
 Lc=K.*L0_vec;
 
 % 2) r, r = 0.5*sqrt(A/pi)
@@ -408,7 +375,7 @@ r=0.5*sqrt(A./pi);
 r=max(r,1e-9); % prevent division by zero
 
 % 3) yield stress
-Fy=250e6;             % Pa（need to be changed）
+Fy=345e6;             % Pa（50ksi）
 
 % 4) evaluate
 passYN=false(nb,1);
@@ -464,4 +431,3 @@ for ii=1:topk
     fprintf('#%d: N=%.2f kN, util=%.3f, mode=%s, Pn=%.2f kN\n', ...
         b, AxialForce(b)/1e3, util_sorted(ii), modeStr{b}, Pn(b)/1e3);
 end
-
