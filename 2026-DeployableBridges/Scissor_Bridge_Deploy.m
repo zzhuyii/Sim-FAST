@@ -3,9 +3,9 @@ clc;
 close all;
 
 %% Initialize the scissor 
-N=4;
-H=0.2286; % (m)
-L=0.2286; % (m)
+N=8;
+H=1; %0.2286; % (m)
+L=1; %0.2286; % (m)
 barA=0.0063*0.01; 
 barE=2*10^9; % (Pa)
 
@@ -67,6 +67,9 @@ assembly.rot_spr_4N=rotSpr4N;
 plots=Plot_Scissor_Bridge; 
 plots.assembly=assembly;
 plots.displayRange=[-0.3*L; L*(N+1); -0.3*L; 1.3*L; -0.3*L; 1.5*L]; 
+plots.viewAngle1=20;
+plots.viewAngle2=20;
+
 plots.Plot_Shape_Node_Number;
 
 %% Define Triangle
@@ -123,13 +126,26 @@ for i=1:N
         19*(i-1)+18  19*(i-1)+23;               
         19*(i-1)+19   19*(i-1)+23;
         19*(i-1)+17  19*(i-1)+22; 
-        19*(i-1)+19  19*(i-1)+22; 
+        19*(i-1)+19  19*(i-1)+22;
+
+        % add new bars
+        19*(i-1)+1    19*(i-1)+2;
+        19*(i-1)+15   19*(i-1)+16;
+        19*(i-1)+1    19*(i-1)+15;
+        19*(i-1)+15   19*(i-1)+20;
+        19*(i-1)+2    19*(i-1)+16;
+        19*(i-1)+16   19*(i-1)+21;
+        
+        19*(i-1)+2    19*(i-1)+15;
+        19*(i-1)+16   19*(i-1)+20;
+
         ];
 end
 
 bar.node_ij_mat=[
         bar.node_ij_mat;
         19*N+3   19*N+4;
+        19*N+1   19*N+2;
         ];
 
 barNum=size(bar.node_ij_mat);
@@ -199,7 +215,7 @@ sf.supp = [1    1 1 1;
            4    1 1 0;
            ];
 
-sf.increStep = 100;
+sf.increStep = 50; %200;
 sf.targetRot = assembly.rot_spr_4N.theta_current_vec;
 
 targetAngle=0.9*pi;
@@ -215,11 +231,7 @@ sf.tol = 10^-5;
 
 Uhis = sf.Solve();  
 plots.fileName = 'Scissor_Bridge_Deploy.gif';
-plots.Plot_Deformed_His(Uhis);
+plots.Plot_Deformed_His(Uhis(1:10:end,:,:));
 
 U_end = squeeze(Uhis(end, :, :));  
 plots.Plot_Deformed_Shape(U_end);
-
-
-
-

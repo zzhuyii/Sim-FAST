@@ -204,7 +204,7 @@ rotSpr.rot_spr_K_vec(4,1)=sprStiff;
 assembly=Assembly_Linkage();
 assembly.node=node;
 assembly.bar=bar;
-assembly.rotSpr=rotSpr;
+assembly.rot_spr_4N=rotSpr;
 
 assembly.InitializeAssembly()
 

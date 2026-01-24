@@ -1,4 +1,5 @@
-classdef Assembly_Linkage < handle
+
+classdef Assembly_MEMS < handle
 
     properties
         % Nodes
@@ -22,6 +23,7 @@ classdef Assembly_Linkage < handle
         % This will set theta_StressFree_Vec to be current theta value
         % This will set current external force to be zero vector
         InitializeAssembly(obj)
+
 
     end
 end

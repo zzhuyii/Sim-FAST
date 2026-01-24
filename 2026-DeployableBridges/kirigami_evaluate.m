@@ -5,15 +5,15 @@ tic
 
 %% Define Geometry
 N=4;
-L=0.8875; %0.875(N=4) 0.8875(N=8)
+L=0.875; %0.875(N=4) 0.8875(N=8)
 W=1;
 H=1;
 w=0.1;
 gap=0;
 
 
-barA=0.01;
-barE=2*10^9;
+barA=0.00227; % 0.0004; % m^2
+barE=200*10^9; % Pa
 panel_E=200*10^9;
 panel_t=0.05;
 panel_v=0.2;
@@ -248,7 +248,7 @@ rot_spr_4N.node_ijkl_mat=[
 rotNum=size(rot_spr_4N.node_ijkl_mat);
 rotNum=rotNum(1);
 
-rot_spr_4N.rot_spr_K_vec=ones(rotNum,1);
+rot_spr_4N.rot_spr_K_vec=ones(rotNum,1)*100000;
 
 factor=100;
 for i=1:N+1
@@ -262,7 +262,6 @@ plots.Plot_Shape_Node_Number;
 plots.Plot_Shape_Spr_Number;
 
 assembly.Initialize_Assembly;
-
 
 %% Calculate self-weight 
 rho_steel=7850;         % kg/m^3
@@ -313,22 +312,34 @@ fprintf('Bar weight: %.2f N\n', W_bar);
 fprintf('CST weight: %.2f N\n', W_cst);
 fprintf('Total self-weight: %.2f N\n', W_total);
 
-
 %% Set up solver
 nr=Solver_NR_Loading;
 nr.assembly=assembly;
+
+% nodeN=size(node.coordinates_mat,1);
+% nr.supp=[(1:nodeN)';zeros(nodeN,1),ones(nodeN,1),zeros(nodeN,1)];
 
 nr.supp=[1 1 1 1;
          2 1 1 1;
          20*N+5 1 1 1;
          20*N+6 1 1 1;];
 
-force=1000; 
-step=10;
-
-
+force=50000; 
+step=100;
 Uhis=[];
+
+A=bar.A_vec(:); % m^2
+E=bar.E_vec(:); % Pa
+K =1.0; % Assume Pin-Pin for every bar               
+Lc=K*bar.L0_vec;
+
+r=0.0287*ones(size(A)); %0.5*sqrt(bar.A_vec./pi);
+Fy=3.45e8;  % Pa
+
+nb=size(A,1);
+
 for k=1:step
+
     nr.load=[N*10+1,0,0,-force*k/4;
              N*10+2,0,0,-force*k/4;
              N*10+5,0,0,-force*k/4;
@@ -339,48 +350,204 @@ for k=1:step
     nr.tol=1*10^-5;
 
     Uhis(k,:,:)=squeeze(nr.Solve());
+
+    truss_strain=bar.Solve_Strain(node,squeeze(Uhis(k,:,:)));
+    Nforce=(truss_strain).*(bar.E_vec).*(bar.A_vec);
+
+    [passVec,modeStrList]=CheckAllBarDesignAISC(Nforce,A,E,Lc,r,Fy);
+
+    if sum(passVec)==nb
+    else
+        
+        fprintf('Failure happended \n');
+
+        % Plot the deformed shape when failure happen
+        plots.Plot_Deformed_Shape(squeeze(Uhis(end,:,:)))
+        
+        % Find the internal force when failure occur
+        truss_strain=bar.Solve_Strain(node,squeeze(Uhis(end,:,:)));
+        internal_force=(truss_strain).*(bar.E_vec).*(bar.A_vec);
+        
+        % Plot failure stress
+        bar_stress=(truss_strain).*(bar.E_vec);
+        plots.Plot_Shape_Bar_Stress(bar_stress)
+        
+        % Find total bar length
+        barLtotal=sum(bar.L0_vec);
+        
+        % Find Stiffness
+        Uaverage=-mean(squeeze(Uhis(end,[N*10+1,N*10+2,N*10+5,N*10+6],3)));
+        Kstiff=step*force/Uaverage;
+        
+        % Find the relationship betweeen the bar internal forces and load
+        loadatfail=force*step;
+        fprintf('Failure load is %d kN \n',  loadatfail/1000);
+        fprintf('Total bar length is %d m \n',  barLtotal);
+        fprintf('Stiffness is %d N/m \n',  Kstiff);
+        fprintf('Total bars: %d\n', barNum);
+
+        plots.Plot_Shape_Bar_Failure(passVec)
+
+        break
+    end
+
+    if k==step
+        fprintf('No Failure Happen \n', barNum);
+    end
 end
 
-plots.Plot_Deformed_Shape(squeeze(Uhis(end,:,:))*20)
+% % Plot the deformed shape when failure happen
+% plots.Plot_Deformed_Shape(squeeze(Uhis(end,:,:)))
+% 
+% % Find the internal force when failure occur
+% truss_strain=bar.Solve_Strain(node,squeeze(Uhis(end,:,:)));
+% internal_force=(truss_strain).*(bar.E_vec).*(bar.A_vec);
+% 
+% % Plot failure stress
+% bar_stress=(truss_strain).*(bar.E_vec);
+% plots.Plot_Shape_Bar_Stress(bar_stress)
+% 
+% % Find total bar length
+% barLtotal=sum(bar.L0_vec);
+% 
+% % Find Stiffness
+% Uaverage=-mean(squeeze(Uhis(end,[N*10+1,N*10+2,N*10+5,N*10+6],3)));
+% Kstiff=step*force/Uaverage;
+% 
+% % Find the relationship betweeen the bar internal forces and load
+% loadatfail=force*step;
+% fprintf('Failure load is %d kN \n',  loadatfail/1000);
+% fprintf('Total bar length is %d m \n',  barLtotal);
+% fprintf('Stiffness is %d N/m \n',  Kstiff);
+% fprintf('Total bars: %d\n', barNum);
+% 
+% loadEff=loadatfail/W_bar
 
 
-truss_strain=bar.Solve_Strain(node,squeeze(Uhis(end,:,:)));
-internal_force=(truss_strain).*(bar.E_vec).*(bar.A_vec);
+% %% Evaluate Member
+% AxialForce=internal_force(:); % N
+% A=bar.A_vec(:); % m^2
+% E=bar.E_vec(:); % Pa
+% nb=numel(A);
+% 
+% % 1) effective length KL
+% if ~isfield(bar,'L0_vec')||isempty(bar.L0_vec)
+%     L0_vec=zeros(nb,1);
+%     for k=1:nb
+%         n1=bar.node_ij_mat(k,1);
+%         n2=bar.node_ij_mat(k,2);
+%         L0_vec(k)=norm(assembly.node.coordinates_mat(n1,:) - ...
+%                          assembly.node.coordinates_mat(n2,:));
+%     end
+% else
+%     L0_vec=bar.L0_vec(:);
+% end
+% K =1.0;                
+% Lc=K.*L0_vec;
+% 
+% % 2) r, r = 0.5*sqrt(A/pi)
+% r=0.5*sqrt(A./pi);
+% r=max(r,1e-9); % prevent division by zero
+% 
+% % 3) yield stress
+% Fy=250e6;             % Pa（need to be changed）
+% 
+% % 4) evaluate
+% passYN=false(nb,1);
+% util=NaN(nb,1);
+% modeStr=cell(nb,1);
+% Pn=NaN(nb,1);
+% slender=NaN(nb,1);   % KL/r
+% Fe=NaN(nb,1);   % Euler stress (Pa)
+% Fcr=NaN(nb,1);   % Critical stress per AISC (Pa)
+% 
+% tiny=1e-12;
+% for i=1:nb
+%     Ni=AxialForce(i);
+%     Ai=A(i);
+%     Ei=E(i);
+%     Lci=Lc(i);
+%     ri=r(i);
+% 
+%     if Ni>0
+%         % in tension 
+%         Pn_i=Fy*Ai;
+%         modeStr{i}='Tension-Yield';
+%         slender(i)=NaN;  
+%         Fe(i)=NaN; 
+%         Fcr(i)=NaN;   % don't calculate buckling in tension
+%     else
+%         % in compression
+%         slender=Lci/ri;
+%         Fe=(pi^2*Ei)/(slender^2);
+%         lambda_lim=4.71*sqrt(Ei/Fy);
+%         if slender<=lambda_lim
+%             Fcr=(0.658)^(Fy/Fe)*Fy;   % inelastic buckling
+%         else
+%             Fcr=0.877*Fe;             % elastic bukling
+%         end
+%         Pn_i=Fcr*Ai;
+%         modeStr{i}='Compression-Buckling';
+%     end
+% 
+%     Pn(i)=Pn_i;
+%     util(i)=abs(Ni)/max(Pn_i,tiny);
+%     passYN(i)=util(i)<=1.0;
+% end
+
+% % 5) print
+% fprintf('Bars passed: %d / %d\n', sum(passYN), nb);
+% 
+% [util_sorted, idx]=sort(util, 'descend');
+% topk=min(10, nb);
+% fprintf('Worst %d bars (by utilization):\n', topk);
+% for ii=1:topk
+%     b=idx(ii);
+%     fprintf('#%d: N=%.2f kN, util=%.3f, mode=%s, Pn=%.2f kN\n', ...
+%         b, AxialForce(b)/1e3, util_sorted(ii), modeStr{b}, Pn(b)/1e3);
+% end
 
 
-% Find the maximum bar internal force
-[maxBarForce,index]=max(abs(internal_force));
-
-
-% Find failure force for the bar
-sigma_u=300*10^6;
-barFailureForce=sigma_u*barA;
-
-
-% Find total bar length
-barLtotal=sum(bar.L0_vec);
-
-% Find Stiffness
-Uaverage=-mean(squeeze(Uhis(end,[N*10+1,N*10+2,N*10+5,N*10+6],3)));
-Kstiff=step*force/Uaverage;
-
-
-% Plot failure stress
-bar_stress=(truss_strain).*(bar.E_vec)*barFailureForce/maxBarForce;
-plots.Plot_Shape_Bar_Stress(bar_stress)
-
-
-
-% Find the relationship betweeen the bar internal forces and load
-loadatfail=force*step*barFailureForce/maxBarForce;
-fprintf('Failure load is %d kN \n',  loadatfail/1000);
-fprintf('Total bar length is %d m \n',  barLtotal);
-fprintf('Stiffness is %d N/m \n',  Kstiff);
-fprintf('Total bars: %d\n', barNum);
-
-loadEff=loadatfail/W_bar
-
-
-
-
-
+% function [pass,modeStr]=CheckBarDesignAISC(Ni,Ai,Ei,Lci,ri,Fy)
+% 
+%     tiny=1e-12;
+% 
+%     if Ni>0
+%         % in tension 
+%         Pn_i=Fy*Ai;
+%         modeStr='Tension-Yield';
+%         slender=NaN;  
+%         Fe=NaN; 
+%         Fcr=NaN;   % don't calculate buckling in tension
+%     else
+%         % in compression
+%         slender=Lci/ri;
+%         Fe=(pi^2*Ei)/(slender^2);
+%         lambda_lim=4.71*sqrt(Ei/Fy); % threshold for elastic/inelastic buckling
+% 
+%         if slender<=lambda_lim
+%             Fcr=(0.658)^(Fy/Fe)*Fy;   % inelastic buckling
+%         else
+%             Fcr=0.877*Fe;             % elastic bukling
+%         end
+%         Pn_i=Fcr*Ai;
+%         modeStr='Compression-Buckling';
+%     end
+% 
+%     Pn=Pn_i;
+%     util=abs(Ni)/max(Pn_i,tiny);
+%     pass=util<=1.0;
+% 
+% end
+% 
+% function [passVec,modeStrList]=CheckAllBarDesignAISC(Nforce,A,E,Lc,r,Fy)
+%     nbar=size(A,1);
+%     passVec=zeros(nbar,1);
+%     modeStrList={};
+%     for i=1:nbar
+% 
+%         [pass,modeStr]=CheckBarDesignAISC(Nforce(i),A(i),E(i),Lc(i),r(i),Fy);
+%         passVec(i)=pass;
+%         modeStrList{i}=modeStr;
+%     end
+% end

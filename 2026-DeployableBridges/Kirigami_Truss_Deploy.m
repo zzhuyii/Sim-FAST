@@ -66,6 +66,8 @@ assembly.rot_spr_4N=rot_spr_4N;
 plots=Plot_Kirigami_Truss;
 plots.assembly=assembly;
 plots.displayRange=[-1; L*(N+1); -1; 2; -1; 2];
+plots.viewAngle1=20;
+plots.viewAngle2=20;
 
 plots.Plot_Shape_Node_Number;
 
@@ -296,6 +298,6 @@ Uhis=sf.Solve;
 toc
 plots.Plot_Deformed_Shape(squeeze(Uhis(end,:,:)))
 plots.fileName='Kirigami_Truss_Deploy.gif';
-plots.Plot_Deformed_His(Uhis(1:10:end,:,:))
+plots.Plot_Deformed_His(Uhis(1:5:end,:,:))
 
 

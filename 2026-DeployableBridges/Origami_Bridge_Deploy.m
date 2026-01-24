@@ -6,7 +6,7 @@ tic
 %% Define Geometry
 L=1;
 gap=0;
-N=4;
+N=8;
 
 node=Elements_Nodes;
 
@@ -45,6 +45,8 @@ assembly.rot_spr_4N=rot_spr_4N;
 plots=Plot_Kirigami_Truss;
 plots.assembly=assembly;
 plots.displayRange=[-1; 2*(N+1); -1.5; 3.5; -1; 2];
+plots.viewAngle1=20;
+plots.viewAngle2=20;
 
 plots.Plot_Shape_Node_Number;
 

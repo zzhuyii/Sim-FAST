@@ -1,15 +1,15 @@
 %% Plot the configuration of the model
 
-function Plot_Shape_SprNumber(obj)
+function Plot_Shape_Bar_Failure(obj,passVec)
 
+% Obtain Information
 View1=obj.viewAngle1;
 View2=obj.viewAngle2;
 Vsize=obj.displayRange;
 Vratio=obj.displayRangeRatio;
-
 assembly=obj.assembly;
 
-% Plot Dots
+%% Set up the graphic space
 figure
 view(View1,View2); 
 set(gca,'DataAspectRatio',[1 1 1])
@@ -24,35 +24,41 @@ else
     axis([Vsize(1) Vsize(2) Vsize(3) Vsize(4) Vsize(5) Vsize(6)])
 end
 
-barNum=size(assembly.bar.A_vec);
+%% Plot the cst element
+node0=assembly.node.coordinates_mat;
+cstIJK=obj.assembly.cst.node_ijk_mat;
+panelNum=size(cstIJK);
+panelNum=panelNum(1);
+
+for k=1:panelNum
+    nodeNumVec=cstIJK(k,:);
+    f=[];
+    v=[];
+    for j=1:length(nodeNumVec)
+        f=[f,j];
+        v=[v;node0(nodeNumVec(j),:)];
+    end
+    patch('Faces',f,'Vertices',v,'FaceColor','yellow')
+end
+
+%% color code bar failure red means fails
+barConnect=obj.assembly.bar.node_ij_mat;
+barNum=size(barConnect);
 barNum=barNum(1);
-barConnect=assembly.bar.node_ij_mat;
 
 for j=1:barNum
+
+    if passVec(j)==0
+        colorTemp = [1 0 0];        % red
+    else
+        colorTemp = [0 0 1];        % blue
+    end
+
     node1=assembly.node.coordinates_mat(barConnect(j,1),:);
     node2=assembly.node.coordinates_mat(barConnect(j,2),:);
     line([node1(1),node2(1)],...
          [node1(2),node2(2)],...
-         [node1(3),node2(3)],'Color','k');
+         [node1(3),node2(3)],'Color',colorTemp,'LineWidth', 2.0);
 end
 
-% Number Dots
-node0=assembly.node.coordinates_mat;
-A=size(assembly.node.coordinates_mat);
-N=A(1);
-
-sprIJKL=obj.assembly.rot_spr_4N.node_ijkl_mat;
-sprNum=size(sprIJKL);
-sprNum=sprNum(1);
-
-
-for i=1:sprNum
-    x=0.5*(node0(sprIJKL(i,2),1)+...
-        node0(sprIJKL(i,3),1));
-    y=0.5*(node0(sprIJKL(i,2),2)+...
-        node0(sprIJKL(i,3),2));
-    z=0.5*(node0(sprIJKL(i,2),3)+...
-        node0(sprIJKL(i,3),3));
-    text(x,y,z,num2str(i),'Color','blue');
-end
 

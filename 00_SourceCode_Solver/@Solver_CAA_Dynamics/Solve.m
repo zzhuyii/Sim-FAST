@@ -51,7 +51,7 @@ function Uhis=Solve(obj)
     % Implement the explicit solver
     for i=1:step
 
-        assembly.rotSpr.theta_stress_free_vec=rotSprTarget(i,:)';
+        assembly.rot_spr_4N.theta_stress_free_vec=rotSprTarget(i,:)';
         [T,K]=assembly.Solve_FK(squeeze(Uhis(i,:,:)));
 
         [K,T]=Mod_K_For_Supp(K,supp,T);

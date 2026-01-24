@@ -1,3 +1,5 @@
+%% This function initialize the assembly system
+
 function InitializeAssembly(obj)
 
     obj.node.current_U_mat = zeros(size(obj.node.coordinates_mat));
