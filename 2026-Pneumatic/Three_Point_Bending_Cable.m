@@ -420,6 +420,7 @@ for k=1:step
 
 end
 
+figure
 plots.Plot_DeformedShape(squeeze(Uhis(end,:,:)))
 
 %% Loading at mid span
@@ -533,7 +534,8 @@ Fhis=(1:step)/step*Loading_Force;
 figure
 plot(Uref,Fhis);
 
-plots.fileName='Ten_Layer_Loading.gif';
+figure
+plots.fileName='Three_Point_Bending_Cable.gif';
 plots.Plot_DeformedHis(Uhis(1:10:end,:,:))
 
 

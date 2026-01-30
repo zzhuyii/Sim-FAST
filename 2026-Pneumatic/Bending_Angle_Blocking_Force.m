@@ -73,7 +73,7 @@ assembly.node=node;
 
 cst=Vec_Elements_CST;
 rotSpr=Vec_Elements_RotSprings_4N;
-actBar=CD_Elements_Cable;
+
 
 % assembly.actBar=actBar;
 assembly.cst=cst;
@@ -326,6 +326,7 @@ for k=1:step
 end
 toc
 
+figure
 plots.Plot_DeformedShape(squeeze(Uhis(end,:,:)))
 
 
@@ -339,7 +340,7 @@ nr.supp=[
     17 1 1 1;
     19 1 1 1;
 ];
-step=1000;
+step=200;
 
 Uhis=[];
 for k=1:step
@@ -373,21 +374,14 @@ cosTheta = dot(angle_cross_v, angle_z) / (norm(angle_cross_v) * norm(angle_z));
 theta_rad = acos(cosTheta);
 theta_deg_Blocking_initial = rad2deg(theta_rad); % Bending Angle at initial stage
 
+figure
 plots.Plot_DeformedShape(squeeze(Uhis(end,:,:)))
 
-plots.fileName='Three_Layer_Bending_CableAttached_initial.gif';
-plots.Plot_DeformedHis(Uhis(1:10:end,:,:))
+UhisTotal=Uhis;
+
 
 
 %% Bending
-
-% nr.supp=[
-%     13 1 1 1;    
-%     15 0 1 1;
-%     17 1 0 1;
-%     19 0 0 1;
-% ];
-
 nr.supp=[
     13 1 1 1;    
     15 1 1 1;
@@ -395,14 +389,7 @@ nr.supp=[
     19 1 1 1;
 ];
 
-% nr.supp=[
-%     153 1 1 1;    
-%     155 0 1 1;
-%     157 1 0 1;
-%     159 0 0 1;
-% ];
-
-step=500;
+step=200;
 targetF=0.96; % Force on each cable for bending
 
 Uhis=[];
@@ -465,12 +452,13 @@ cosTheta = dot(angle_cross_v, angle_z) / (norm(angle_cross_v) * norm(angle_z));
 theta_rad = acos(cosTheta);
 theta_deg_Blocking = rad2deg(theta_rad); % Bending Angle
 
+figure
 plots.Plot_DeformedShape(squeeze(Uhis(end,:,:)))
 
-plots.fileName='Three_Layer_Bending_CableAttached.gif';
-plots.Plot_DeformedHis(Uhis(1:10:end,:,:))
-
-
+figure
+UhisTotal=cat(1,UhisTotal,Uhis);
+plots.fileName='Bending_Angle_Blocking_Force.gif';
+plots.Plot_DeformedHis(UhisTotal(1:10:end,:,:))
 
 
 

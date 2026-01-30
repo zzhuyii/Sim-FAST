@@ -331,6 +331,8 @@ toc
 % Plot the inflated configuration
 figure;
 plots.Plot_DeformedShape(squeeze(UhisInflate(end,:,:)))
+
+figure;
 plots.fileName='Three_Unit_Compare.gif';
 plots.Plot_DeformedHis(UhisInflate);
 
