@@ -1,28 +1,25 @@
 
-classdef Assembly_Truss_Rolling_Bridge < handle
+classdef Assembly_Kirigami_Truss < handle
 
     properties
         % Nodes
         node
 
-        % Bars
-        bar
-
-        % Active Bars
-        actBar
-
-        % % 3-node rot springs
-        % rot_spr_3N
-
-        % Bars
+        % triangle element
         cst
+
+        % rotational springs
+        rot_spr_4N
+
+        % bar elements
+        bar
 
     end
 
     methods
         % For a given input deformation find the global force vector and
         % the stiffness matrix
-        [T,K]=Solve_FK(obj,node,U)
+        [T,K]=Solve_FK(obj,U)
 
         % Initialize the assembly
         % This will set currentU to be zero matrix

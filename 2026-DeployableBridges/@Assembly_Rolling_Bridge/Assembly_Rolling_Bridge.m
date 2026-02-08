@@ -11,8 +11,8 @@ classdef Assembly_Rolling_Bridge < handle
         % Active Bars
         actBar
 
-        % 3-node rot springs
-        rot_spr_3N
+        % 4-node rot springs
+        rot_spr_4N
 
         % Bars
         cst

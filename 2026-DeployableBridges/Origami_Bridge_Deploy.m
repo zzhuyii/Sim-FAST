@@ -4,12 +4,42 @@ clc
 tic
 
 %% Define Geometry
-L=1;
-gap=0;
-N=8;
+% Number of Sections
+N=4;
 
+% Height of the bridge
+L=2;
+
+% HSS 4X3X5/16 A500 Grade C Fy=50ksi
+barA=0.0023; % 3.52 in^2
+barE=2*10^11;
+
+% We will use the weak axis
+I=1.88*10^-6; 
+
+% We assume a soft panel so that only the truss is taking global load
+% Thus, panel Young's modulus is 200 MPa
+panel_E=2*10^8;
+panel_t=0.01;
+panel_v=0.3;
+
+
+
+
+%% Define assembly
+assembly=Assembly_Origami;
+cst=Vec_Elements_CST;
+rot_spr_4N=Vec_Elements_RotSprings_4N;
+bar=Vec_Elements_Bars;
 node=Elements_Nodes;
 
+assembly.cst=cst;
+assembly.node=node;
+assembly.bar=bar;
+assembly.rot_spr_4N=rot_spr_4N;
+
+
+%% Define Nodal Coordinates
 for i=1:N
     node.coordinates_mat=[node.coordinates_mat;
         2*L*(i-1), 0, L;
@@ -27,24 +57,17 @@ node.coordinates_mat=[node.coordinates_mat;
         2*L*N, 0, L;
         2*L*N, 0, 0;
         2*L*N, 2*L, 0;
-        2*L*N, 2*L, L; ];
+        2*L*N, 2*L, L; 
+        ];
 
 
-%% Define assembly
-assembly=Assembly_Origami;
-cst=Vec_Elements_CST;
-rot_spr_4N=Vec_Elements_RotSprings_4N;
-bar=Vec_Elements_Bars;
 
-assembly.cst=cst;
-assembly.node=node;
-assembly.bar=bar;
-assembly.rot_spr_4N=rot_spr_4N;
 
 %% Define Plotting Functions
 plots=Plot_Kirigami_Truss;
 plots.assembly=assembly;
-plots.displayRange=[-1; 2*(N+1); -1.5; 3.5; -1; 2];
+plots.displayRange=[-1; 4*(N+1); -3; 7; -2; 3];
+
 plots.viewAngle1=20;
 plots.viewAngle2=20;
 
@@ -63,11 +86,13 @@ for i=1:N
 end
 
 cstNum=size(cst.node_ijk_mat,1);
-cst.t_vec=0.05*ones(cstNum,1);
-cst.E_vec=2*10^9*ones(cstNum,1);
-cst.v_vec=0.2*ones(cstNum,1);
+cst.t_vec=panel_t*ones(cstNum,1);
+cst.E_vec=panel_E*ones(cstNum,1);
+cst.v_vec=panel_v*ones(cstNum,1);
 
 plots.Plot_Shape_CST_Number;
+
+
 
 %% Define bar
 for i=1:N
@@ -87,12 +112,29 @@ for i=1:N
         9*(i-1)+9   9*(i-1)+8;
         9*(i-1)+9   9*(i-1)+13;
         9*(i-1)+13   9*(i-1)+12;
+
+        % add new bars
+        9*(i-1)+2   9*(i-1)+7;
+        9*(i-1)+3   9*(i-1)+7;
+        9*(i-1)+6   9*(i-1)+7;
+        9*(i-1)+8   9*(i-1)+7;
+        9*(i-1)+11  9*(i-1)+7;
+        9*(i-1)+12  9*(i-1)+7;
+        9*(i-1)+2   9*(i-1)+3;
+        9*(i-1)+3   9*(i-1)+8;
+        9*(i-1)+8   9*(i-1)+12;
+        9*(i-1)+2   9*(i-1)+6;
+        9*(i-1)+6   9*(i-1)+11;
         ];
 end
 
+bar.node_ij_mat=[bar.node_ij_mat;
+    9*(N-1)+11   9*(N-1)+12;
+    ];
+
 barNum=size(bar.node_ij_mat,1);
-bar.A_vec=0.01*ones(barNum,1);
-bar.E_vec=2*10^9*ones(barNum,1);
+bar.A_vec=barA*ones(barNum,1);
+bar.E_vec=barE*ones(barNum,1);
 
 plots.Plot_Shape_Bar_Number();
 
@@ -142,61 +184,6 @@ plots.Plot_Shape_Spr_Number;
 assembly.Initialize_Assembly;
 
 
-%% Calculate Self-weight of the Bridge
-rho_steel = 7850;         % Density of steel in kg/m^3
-A_bar = 0.01;             % Cross-sectional area of bar elements in m^2 (consistent with bar.A_vec)
-
-% a. Calculate the total length of all bar elements
-L_total = 0;
-barNodeMat = bar.node_ij_mat;
-coords = node.coordinates_mat;
-
-for i = 1:size(barNodeMat,1)
-    n1 = barNodeMat(i,1);
-    n2 = barNodeMat(i,2);
-    p1 = coords(n1,:);
-    p2 = coords(n2,:);
-    len = norm(p1 - p2);
-    L_total = L_total + len;
-end
-
-% b. Calculate the total weight of all bars (in Newtons)
-W_bar = A_bar * L_total * rho_steel * 9.81;
-
-% c. Calculate the total area of all CST (triangular plate) elements
-A_cst_total = 0;
-cstNodeMat = cst.node_ijk_mat;
-for i = 1:size(cstNodeMat,1)
-    n1 = cstNodeMat(i,1);
-    n2 = cstNodeMat(i,2);
-    n3 = cstNodeMat(i,3);
-    p1 = coords(n1,:);
-    p2 = coords(n2,:);
-    p3 = coords(n3,:);
-    % Use Heron's formula to calculate triangle area
-    a = norm(p1 - p2);
-    b = norm(p2 - p3);
-    c = norm(p3 - p1);
-    s = (a + b + c) / 2;
-    area = sqrt(s * (s - a) * (s - b) * (s - c));
-    A_cst_total = A_cst_total + area;
-end
-
-% d. Calculate the total weight of all CST elements
-t_cst = 0.005;  % Plate thickness, assumed to be 5 mm (0.005 m)
-W_cst = A_cst_total * t_cst * rho_steel * 9.81; % in Newtons
-
-% Total self-weight
-W_total = W_bar + W_cst;
-
-fprintf('-----------------------------\n');
-fprintf('Total bar length: %.2f m\n', L_total);
-fprintf('Total CST area: %.2f m^2\n', A_cst_total);
-fprintf('Bar weight: %.2f N\n', W_bar);
-fprintf('CST weight: %.2f N\n', W_cst);
-fprintf('Total self-weight: %.2f N\n', W_total);
-fprintf('-----------------------------\n');
-
 
 %% Set up solver
 sf=Solver_NR_Folding_4N;
@@ -216,9 +203,10 @@ sf.iterMax=20;
 sf.tol=1*10^-5;
 
 Uhis1=sf.Solve;
+plots.Plot_Deformed_Shape(squeeze(Uhis1(end,:,:)))
 
-sf.increStep=400;
-targetFold=0.95*pi;
+sf.increStep=2000;
+targetFold=0.9*pi;
 
 for i=1:N
     sf.targetRot(16*(i-1)+3)=pi-targetFold;
@@ -247,9 +235,9 @@ Uhis2=sf.Solve;
 toc
 plots.Plot_Deformed_Shape(squeeze(Uhis2(end,:,:)))
 
-Uhis=cat(1,Uhis1,Uhis2);
+Uhis=cat(1,Uhis1,Uhis2(1:10:end,:,:));
 
 plots.fileName='Origami_Bridge_Deploy.gif';
-plots.Plot_Deformed_His(Uhis(1:10:end,:,:))
+plots.Plot_Deformed_His(Uhis(1:4:end,:,:))
 
 

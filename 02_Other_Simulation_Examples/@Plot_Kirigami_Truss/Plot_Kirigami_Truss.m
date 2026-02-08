@@ -1,5 +1,4 @@
-
-classdef Plot_Truss_Rolling_Bridge < handle
+classdef Plot_Kirigami_Truss < handle
 
     properties
         % Assembly of structure
@@ -18,13 +17,10 @@ classdef Plot_Truss_Rolling_Bridge < handle
         y0=0;
 
         % hold time for gif
-        holdTime=0.01;
+        holdTime=0.01;        
 
-        % the name for animation file
-        fileName='animation.gif'        
-
-        % number of active truss (will be plotted with different color)
-        activeTrussNum
+        % Animation file name
+        fileName='Animation.gif'
 
         % Panel information for plotting
         panelConnection={}
@@ -35,14 +31,14 @@ classdef Plot_Truss_Rolling_Bridge < handle
         % Plot the shape of the system with node number
         Plot_Shape_Node_Number(obj);
 
-        % Plot the shape of the system with bar number
+        % Plot the shape of the system with rot spr number
+        Plot_Shape_Spr_Number(obj);
+
+        % Plot the shape of the system with cst number
+        Plot_Shape_CST_Number(obj)
+
+        % Plot the number of bars
         Plot_Shape_Bar_Number(obj);
-
-        % Plot the shape of the system with active bar number
-        Plot_Shape_ActBar_Number(obj);
-
-        % % Plot the shape of the system with spring number
-        % Plot_Shape_Spr_Number(obj);
 
         % Plot the deformation animation
         Plot_Deformed_His(obj,Uhis)
@@ -50,8 +46,7 @@ classdef Plot_Truss_Rolling_Bridge < handle
         % Plot the deformed shape of the system
         Plot_Deformed_Shape(obj,U)
 
-        % Plot the force of the bar
-        Plot_Bar_Force(obj,F)
-
+        % Plot bar stress
+        Plot_Shape_Bar_Stress(obj,bar_stress)
     end
 end

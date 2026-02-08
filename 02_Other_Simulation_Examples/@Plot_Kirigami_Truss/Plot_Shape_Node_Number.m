@@ -24,7 +24,7 @@ else
     axis([Vsize(1) Vsize(2) Vsize(3) Vsize(4) Vsize(5) Vsize(6)])
 end
 
-%% Plot the undeformed cst element
+%% Plot the cst element
 node0=assembly.node.coordinates_mat;
 cstIJK=obj.assembly.cst.node_ijk_mat;
 panelNum=size(cstIJK);
@@ -41,10 +41,10 @@ for k=1:panelNum
     patch('Faces',f,'Vertices',v,'FaceColor','yellow')
 end
 
-%% Plot the undeformed bar element
-barNum=size(assembly.bar.A_vec);
+%% Plot the bar element
+barConnect=obj.assembly.bar.node_ij_mat;
+barNum=size(barConnect);
 barNum=barNum(1);
-barConnect=assembly.bar.node_ij_mat;
 
 for j=1:barNum
     node1=assembly.node.coordinates_mat(barConnect(j,1),:);
@@ -54,7 +54,7 @@ for j=1:barNum
          [node1(3),node2(3)],'Color','k');
 end
 
-%% Number the nodes
+%% Number the node
 node0=assembly.node.coordinates_mat;
 nodeN=size(assembly.node.coordinates_mat,1);
 for i=1:nodeN

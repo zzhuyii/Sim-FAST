@@ -11,7 +11,7 @@ assembly=obj.assembly;
 undeformedNode=assembly.node.coordinates_mat;
 
 %% Set up the graphic space
-figure;
+figure
 set(gcf, 'color', 'white');
 set(gcf,'position',[obj.x0,obj.y0,obj.width,obj.height])
 view(View1,View2); 
@@ -24,20 +24,7 @@ else
     axis([Vsize(1) Vsize(2) Vsize(3) Vsize(4) Vsize(5) Vsize(6)])
 end
 
-%% Plot the undeformed bar element
-barConnect=assembly.bar.node_ij_mat;
-barNum=size(barConnect);
-barNum=barNum(1);
-
-for j=1:barNum
-    node1=undeformedNode(barConnect(j,1),:);
-    node2=undeformedNode(barConnect(j,2),:);
-    line([node1(1),node2(1)],...
-         [node1(2),node2(2)],...
-         [node1(3),node2(3)],'Color',[.7 .7 .7]);
-end
-
-%% Plot the undeformed cst element
+%% Plot the undeformed cst element 
 node0=assembly.node.coordinates_mat;
 cstIJK=obj.assembly.cst.node_ijk_mat;
 panelNum=size(cstIJK);
@@ -54,39 +41,18 @@ for k=1:panelNum
     patch('Faces',f,'Vertices',v,'FaceColor','black','FaceAlpha',0.2)
 end
 
-%% Plot the actuation bar
-actbarNum=size(assembly.actBar.A_vec);
-actbarNum=actbarNum(1);
-actbarConnect=assembly.actBar.node_ij_mat;
+%% Plot the undeformed bar element
+barConnect=obj.assembly.bar.node_ij_mat;
+barNum=size(barConnect);
+barNum=barNum(1);
 
-for j=1:actbarNum
-    node1=assembly.node.coordinates_mat(actbarConnect(j,1),:);
-    node2=assembly.node.coordinates_mat(actbarConnect(j,2),:);
+for j=1:barNum
+    node1=node0(barConnect(j,1),:);
+    node2=node0(barConnect(j,2),:);
     line([node1(1),node2(1)],...
          [node1(2),node2(2)],...
-         [node1(3),node2(3)],'Color',[.7 .7 .7]);
+         [node1(3),node2(3)],'Color',[0.5,0.5,0.5] );
 end
-
-%% Plot the deformed bar
-deformNode=undeformedNode+U;
-
-for j=1:barNum    
-        node1=deformNode(barConnect(j,1),:);
-        node2=deformNode(barConnect(j,2),:);
-        line([node1(1),node2(1)],...
-             [node1(2),node2(2)],...
-             [node1(3),node2(3)],'Color','k');
-end
-
-%% Plot the deformed actuation bar
-for j=1:actbarNum
-    node1=deformNode(actbarConnect(j,1),:);
-    node2=deformNode(actbarConnect(j,2),:);
-    line([node1(1),node2(1)],...
-         [node1(2),node2(2)],...
-         [node1(3),node2(3)],'Color','blue');
-end
-
 
 %% Plot the deformed CST element
 deformNode=undeformedNode+U;
@@ -102,3 +68,20 @@ for k=1:panelNum
     patch('Faces',f,'Vertices',v,'FaceColor','yellow')
 
 end
+
+%% Plot the deformed bar element
+barConnect=obj.assembly.bar.node_ij_mat;
+barNum=size(barConnect);
+barNum=barNum(1);
+
+for j=1:barNum
+    node1=deformNode(barConnect(j,1),:);
+    node2=deformNode(barConnect(j,2),:);
+    line([node1(1),node2(1)],...
+         [node1(2),node2(2)],...
+         [node1(3),node2(3)],'Color','k');
+end
+
+
+
+

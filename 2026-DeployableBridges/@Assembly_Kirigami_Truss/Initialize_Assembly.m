@@ -10,4 +10,6 @@ function Initialize_Assembly(obj)
 
     obj.bar.Initialize(obj.node)   
 
+    obj.rot_spr_3N.Initialize(obj.node)
+
 end

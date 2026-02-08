@@ -4,7 +4,8 @@ function [T, K] = Solve_FK(obj, U)
     [Tbar, Kbar] = obj.bar.Solve_FK(obj.node, U);
     [Tspr3, Kspr3] = obj.rot_spr_3N.Solve_FK(obj.node, U);
     [Tspr4, Kspr4] = obj.rot_spr_4N.Solve_FK(obj.node, U);
+    [Tab, Kab] = obj.actBar.Solve_FK(obj.node, U);
 
-    T = Tcst + Tbar + Tspr3 + Tspr4;
-    K = Kcst + Kbar + Kspr3 + Kspr4;
+    T = Tcst + Tbar + Tspr3 + Tspr4 + Tab;
+    K = Kcst + Kbar + Kspr3 + Kspr4 + Kab;
 end

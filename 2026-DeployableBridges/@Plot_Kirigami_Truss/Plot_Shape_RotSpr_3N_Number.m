@@ -1,5 +1,6 @@
 %% Plot the configuration of the model
-function Plot_Shape_Spr_Number(obj)
+
+function Plot_Shape_RotSpr_3N_Number(obj)
 
 % Obtain Information
 View1=obj.viewAngle1;
@@ -25,8 +26,7 @@ end
 %% Plot the cst element
 node0=assembly.node.coordinates_mat;
 cstIJK=obj.assembly.cst.node_ijk_mat;
-panelNum=size(cstIJK);
-panelNum=panelNum(1);
+panelNum=size(cstIJK,1);
 
 for k=1:panelNum
     nodeNumVec=cstIJK(k,:);
@@ -52,18 +52,15 @@ for j=1:barNum
          [node1(3),node2(3)],'Color','k');
 end
 
-%% Plot and number rotational spring element
-sprIJKL=obj.assembly.rot_spr_4N.node_ijkl_mat;
-sprNum=size(sprIJKL);
+%% Plot the number for the 3 Node Rotational Spring
+sprIJK=obj.assembly.rot_spr_3N.node_ijk_mat;
+sprNum=size(sprIJK);
 sprNum=sprNum(1);
 
 for i=1:sprNum
-    x=0.5*(node0(sprIJKL(i,2),1)+...
-        node0(sprIJKL(i,3),1));
-    y=0.5*(node0(sprIJKL(i,2),2)+...
-        node0(sprIJKL(i,3),2));
-    z=0.5*(node0(sprIJKL(i,2),3)+...
-        node0(sprIJKL(i,3),3));
+    x=(node0(sprIJK(i,2),1));
+    y=(node0(sprIJK(i,2),2));
+    z=(node0(sprIJK(i,2),3));
     text(x,y,z,num2str(i),'Color','blue');
 end
 

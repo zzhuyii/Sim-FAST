@@ -11,6 +11,9 @@ classdef Assembly_Kirigami_Truss < handle
         % rotational springs
         rot_spr_4N
 
+        % rotational springs
+        rot_spr_3N
+
         % bar elements
         bar
 

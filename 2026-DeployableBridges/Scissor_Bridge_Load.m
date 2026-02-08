@@ -2,7 +2,7 @@ clear all;
 clc;
 close all;
 
-%% Initialize the scissor 
+%% Initialize the scissor, 
 % Number of Sections
 N=8;
 
@@ -255,52 +255,163 @@ plots.Plot_Shape_ActBar_Number;
 assembly.Initialize_Assembly;
 
 
-%% Set up solver   
-ta=Solver_NR_TrussAction;
-ta.assembly = assembly;
+%% Calculate Self-weight of the Bridge
 
-ta.supp = [1    1 1 1;
-           2    1 1 1;
-           3    1 1 0;
-           4    1 1 0;
-           ];
+% Steel properties
+rho_steel=7850;         % Density of steel in kg/m^3
+g=9.81;                 % Gravitational acceleration in m/s^2
 
-base_L0=actBar.L0_vec; 
-ta.targetL0=base_L0;
+% Bar elements
+A_bar=barA;             % Cross-sectional area of bars in m^2 (matches bar.A_vec)
 
-for step=1:800
+% Calculate total length of all bars
+L_total=0;
+barNodeMat=bar.node_ij_mat;
+coords=node.coordinates_mat;
 
-    ta.increStep = 1; 
-
-    if step<=150
-        dL=0.001*step; 
-    else
-        dL=0.001*150+0.0004*(step-150);
-    end
-    
-    for i=1:actBarNum1
-        ta.targetL0(i)=base_L0(i)+dL;
-    end
-    
-    theta=acos((L+dL)/sqrt(2)/L );
-    L2=L/sqrt(2)*sin(theta);
-    L3 = sqrt((L/2)^2-L2^2);
-
-    for i=(actBarNum1+1):actBarNum
-        ta.targetL0(i)=base_L0(i)-L3;
-    end
-    
-    ta.iterMax = 40;
-    ta.tol = 10^-3;
-    
-    Utemp = ta.Solve();  
-    Uhis(step,:,:)=squeeze(Utemp);
-
-    a=1;
+for i=1:size(barNodeMat,1)
+    n1=barNodeMat(i,1);
+    n2=barNodeMat(i,2);
+    p1=coords(n1,:);
+    p2=coords(n2,:);
+    len=norm(p1-p2);
+    L_total=L_total+len;
 end
 
-plots.fileName = 'Scissor_Bridge_Deploy.gif';
-plots.Plot_Deformed_His(Uhis(1:10:end,:,:));
+% Total bar weight (Newtons)
+W_bar=A_bar*L_total*rho_steel*g;   
 
-U_end = squeeze(Uhis(end, :, :));  
-plots.Plot_Deformed_Shape(U_end);
+
+
+
+%% Set up solver  
+nr=Solver_NR_Loading;
+nr.assembly=assembly;
+
+nodeNum=size(node.coordinates_mat,1);
+nodeNumVec=(1:nodeNum)';
+
+nr.supp = [1    1 1 1;
+           2    1 1 1;
+           10*N+1    0 1 1; 
+           10*N+2    0 1 1; 
+           ];
+
+% force increment of each node per node
+force=2000;   % N
+
+
+for i=1:100
+
+    % Nonlinear solver settings
+    nr.increStep=1;
+    nr.iterMax=50;
+    nr.tol=1e-5;  
+
+    nr.load=[];
+    total_F=0;
+    for k=1:N-1
+        nr.load=[nr.load;
+            10*(k-1)+1 0 0 -force*i;
+            10*(k-1)+2 0 0 -force*i;];
+        total_F=force*2*i+total_F;
+    end
+    
+    % Solve
+    Uhis=nr.Solve;
+    
+    %% Evaluate if member is failing
+    % Deformation
+    U_end=squeeze(Uhis(end,:,:));   % [nodeNum x 3]
+    
+    % strain in each bar
+    truss_strain=bar.Solve_Strain(node, U_end); 
+
+    % axial force in each bar (N)
+    internal_force=truss_strain.*(bar.E_vec).*(bar.A_vec); 
+
+    barNum=numel(internal_force);
+    
+    % effective length KL
+    L0_vec=bar.L0_vec(:);
+    K=1.0;                
+    Lc=K.*L0_vec;
+    
+    % find r value: r = sqrt(I/A)
+    r=sqrt(I/barA)*ones(barNum);
+    
+    % yield stress
+    Fy=345*10^6;  % Q345 steel or Grade50 (345MPa,50ksi)
+    
+    % pass = 1 means member is not failing
+    passYN=false(barNum,1);
+
+    % Critical Stress Ratio
+    StressRatio=NaN(barNum,1);
+
+    % Failure mode
+    modeStr=cell(barNum,1);
+
+    % critical failure load
+    Pn=NaN(barNum,1);
+
+    % slenderness ratio: KL/r
+    slender=NaN(barNum,1);   
+
+    % Euler stress (Pa)
+    Fe=NaN(barNum,1);   
+
+    % Critical stress requirement from AISC (Pa)
+    Fcr=NaN(barNum,1);   
+
+    for k=1:barNum
+        Ni=internal_force(k);
+        Ai=bar.A_vec(k);
+        Ei=bar.E_vec(k);
+        Lci=Lc(k);
+        ri=r(k);
+
+        % Use the AISC to check the member failure
+        [passi,modeStri,Pni,stressRatioi]=Check_Truss_AISC(Ni,Ai,Ei,Lci,ri,Fy);
+    
+        modeStr{k}=modeStri;
+        Pn(k)=Pni;
+        StressRatio(k)=stressRatioi;
+        passYN(k)=passi;
+    end
+    
+    if max(StressRatio)<1
+        fprintf('All Truss Safe \n');
+    else
+        fprintf('Failure Detected \n');
+        break
+    end
+
+end
+
+
+% Find Stiffness
+Uaverage=-mean(squeeze(Uhis(end,[3*N-3,3*N-1],3)));
+Kstiff=total_F/Uaverage;
+
+% Output results
+fprintf('-----------------------------\n');
+fprintf('Total length of all bars: %.2f m\n', L_total);
+fprintf('Total bar weight: %.2f N\n', W_bar);
+fprintf('Failure load is: %.2f N\n', total_F);
+fprintf('Mid-span deflection at failure is: %.3f m\n', Uaverage);
+fprintf('Stiffness is: %.2f N/m\n', Kstiff);
+fprintf('span/disp at failure is: %.2f \n', 16/Uaverage);
+fprintf('capacity/weight: %.2f \n', total_F/W_bar);
+fprintf('-----------------------------\n');
+
+% Plot the bar stress
+truss_stress=truss_strain.*(bar.E_vec);
+plots.Plot_Shape_Bar_Stress(truss_stress);
+
+% Plot failed bar stress
+plots.Plot_Shape_Bar_Failure(passYN);
+
+
+
+

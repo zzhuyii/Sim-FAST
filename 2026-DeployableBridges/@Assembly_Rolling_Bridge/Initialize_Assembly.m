@@ -7,7 +7,7 @@ function Initialize_Assembly(obj)
 
     obj.bar.Initialize(obj.node);
     obj.actBar.Initialize(obj.node);
-    obj.rot_spr_3N.Initialize(obj.node);
+    obj.rot_spr_4N.Initialize(obj.node);
     obj.cst.Initialize(obj.node);
 
 end

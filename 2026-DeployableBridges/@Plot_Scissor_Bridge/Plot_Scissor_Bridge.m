@@ -49,5 +49,8 @@ classdef Plot_Scissor_Bridge < handle
         % Plot the deformed shape of the system
         Plot_Deformed_Shape(obj,U)
 
+        % Plot the deformed shape of the system
+        Plot_Shape_ActBar_Number(obj)
+
     end
 end

@@ -65,6 +65,19 @@ for j=1:barNum
          [node1(3),node2(3)],'Color','k');
 end
 
+%% Plot the active bar
+actBarConnect=assembly.actBar.node_ij_mat;
+actBarNum=size(actBarConnect);
+actBarNum=actBarNum(1);
+
+for j=1:actBarNum
+    node1=deformNode(actBarConnect(j,1),:);
+    node2=deformNode(actBarConnect(j,2),:);
+    line([node1(1),node2(1)],...
+         [node1(2),node2(2)],...
+         [node1(3),node2(3)],'Color','b','Linewidth',3);
+end
+
 %% Plot the deformed cst element
 for k=1:panelNum
     nodeNumVec=cstIJK(k,:);

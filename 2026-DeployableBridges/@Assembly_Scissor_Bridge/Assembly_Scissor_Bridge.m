@@ -16,6 +16,10 @@ classdef Assembly_Scissor_Bridge < handle
 
         % 4 Node Rotational Springs
         rot_spr_4N
+
+        % Act Bar
+        actBar
+        
     end
     
     methods

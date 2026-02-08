@@ -17,8 +17,11 @@ N=8;
 
 % The cross section of this bridge is:
 % HSS 4X3X5/16 A500 Grade C Fy=50ksi/200 GPa
-barA=0.0023;
+barA=0.0023; 
 barE=2*10^11;
+
+% We will use the weak axis
+I=1.88*10^-6; 
 
 % We assume a soft panel so that only the truss is taking global load
 % Thus, panel Young's modulus is 200 MPa
@@ -33,7 +36,7 @@ activeBarE=2*10^11; % 80*10^9;
 % Initialize Elements and Assembly
 node=Elements_Nodes;
 bar=Vec_Elements_Bars;
-actBar=Std_Elements_Bars;
+actBar=CD_Elements_Bars;
 cst=Vec_Elements_CST;
 rot_spr_4N=Vec_Elements_RotSprings_4N;
 
@@ -78,12 +81,13 @@ node.coordinates_mat=[node.coordinates_mat;
     L*N-L/2  W   H;
     ];
 
+%% Define Plotting Functions
 % Set up the plotting function for inspection
 plots=Plot_Rolling_Bridge();
 plots.assembly=assembly;
 
 % We will plot for the Rolling Bridge
-plots.displayRange=[-2;18;-1;3;-1;14]; 
+plots.displayRange=[-0.5;2*N+0.5;-0.5;2.5;-0.5;2.5]; 
 plots.viewAngle1=20;
 plots.viewAngle2=20;
 
@@ -254,40 +258,181 @@ plots.Plot_Shape_Spr_Number;
 assembly.Initialize_Assembly();
 
 
-%% Set up the self actuation solver
-ta=Solver_NR_TrussAction;
+%% Calculate Self-weight of the Bridge
+
+% Steel properties
+rho_steel=7850;         % Density of steel (kg/m^3)
+g=9.81;                 % Gravitational acceleration (m/s^2)
+
+% Bar cross-section area
+A_bar=barA;             % m^2, should match bar.A_vec
+
+% Total length of all normal bar elements
+L_bar_total=0;
+barNodeMat=bar.node_ij_mat;
+coords=node.coordinates_mat;
+
+for i=1:size(barNodeMat,1)
+    n1=barNodeMat(i,1);
+    n2=barNodeMat(i,2);
+    p1=coords(n1,:);
+    p2=coords(n2,:);
+    len=norm(p1-p2);
+    L_bar_total=L_bar_total+len;
+end
+
+% Total length of all actuator bar elements
+L_actbar_total=0;
+if isfield(actBar,'node_ij_mat')
+    actBarNodeMat=actBar.node_ij_mat;
+    for i=1:size(actBarNodeMat,1)
+        n1=actBarNodeMat(i,1);
+        n2=actBarNodeMat(i,2);
+        p1=coords(n1,:);
+        p2=coords(n2,:);
+        len=norm(p1-p2);
+        L_actbar_total=L_actbar_total+len;
+    end
+end
+
+% Total bar length (all bars)
+L_total=L_bar_total+L_actbar_total;
+
+% Total weight of all bars (Newtons)
+W_bar=A_bar*L_total*rho_steel*g;
+
+
+
+
+%% Distributed load along full length on bridge bottom
+nr=Solver_NR_Loading;
+nr.assembly=assembly;
 
 nodeNum=size(node.coordinates_mat,1);
 nodeNumVec=(1:nodeNum)';
 
 % Set up the support of this bridge
-% The left end of this bridge is fully restricted
-ta.assembly=assembly;
-ta.supp=[nodeNumVec,zeros(nodeNum,1),zeros(nodeNum,1),zeros(nodeNum,1)];
-ta.supp(1,2:4)=ones(1,3);
-ta.supp(2,2:4)=ones(1,3);
-ta.supp(3,2:4)=ones(1,3);
-ta.supp(4,2:4)=ones(1,3);
+nr.assembly=assembly;
+nr.supp=[nodeNumVec,zeros(nodeNum,1),zeros(nodeNum,1),zeros(nodeNum,1)];
+nr.supp(1,2:4)=ones(1,3);
+nr.supp(4,2:4)=ones(1,3);
+nr.supp(45,2:4)=ones(1,3);
+nr.supp(47,2:4)=ones(1,3);
 
-% Set up the total loading step
-ta.increStep=800;
-% Set up the maximum iteration
-ta.iterMax=30;
-% Set up the tolorence
-ta.tol=10^-1;
+% force increment of each node per node
+force=1000;   % N
 
-% Extension of actuator bars
-dL=1.1;
-ta.targetL0=actBar.L0_vec;
-ta.targetL0=ta.targetL0+dL;
 
-% Solve for the deformation history
-Uhis=ta.Solve();
+for i=1:100
 
-% Plot the deformed shape
-plots.Plot_Deformed_Shape(squeeze(Uhis(end,:,:)));
+    % Nonlinear solver settings
+    nr.increStep=1;
+    nr.iterMax=50;
+    nr.tol=1e-5;    
 
-% Also plot the deformation history
-plots.fileName="Rolling_Bridge_Deploy.gif";
-plots.Plot_Deformed_His(Uhis(1:10:end,:,:));
+    nr.load=[];
+    total_F=0;
+    for k=1:N-1
+        nr.load=[nr.load;
+            6*(k-1)+3 0 0 -force*i;
+            6*(k-1)+5 0 0 -force*i;];
+        total_F=force*2*i+total_F;
+    end
+    
+    % Solve
+    Uhis=nr.Solve;
+    
+
+    %% Evaluate if member is failing
+    % Deformation
+    U_end=squeeze(Uhis(end,:,:));   % [nodeNum x 3]
+    
+    % strain in each bar
+    truss_strain=bar.Solve_Strain(node, U_end); 
+
+    % axial force in each bar (N)
+    internal_force=truss_strain.*(bar.E_vec).*(bar.A_vec); 
+
+    barNum=numel(internal_force);
+    
+    % effective length KL
+    L0_vec=bar.L0_vec(:);
+    K=1.0;                
+    Lc=K.*L0_vec;
+    
+    % find r value: r = sqrt(I/A)
+    r=sqrt(I/barA)*ones(barNum);
+    % prevent division by zero
+    r=max(r,1e-9); 
+    
+    % yield stress
+    Fy=345*10^6;  % Q345 steel or Grade50 (345MPa,50ksi)
+    
+    % pass = 1 means member is not failing
+    passYN=false(barNum,1);
+
+    % Critical Stress Ratio
+    StressRatio=NaN(barNum,1);
+
+    % Failure mode
+    modeStr=cell(barNum,1);
+
+    % critical failure load
+    Pn=NaN(barNum,1);
+
+    % slenderness ratio: KL/r
+    slender=NaN(barNum,1);   
+
+    % Euler stress (Pa)
+    Fe=NaN(barNum,1);   
+
+    % Critical stress requirement from AISC (Pa)
+    Fcr=NaN(barNum,1);   
+
+    for k=1:barNum
+        Ni=internal_force(k);
+        Ai=bar.A_vec(k);
+        Ei=bar.E_vec(k);
+        Lci=Lc(k);
+        ri=r(k);
+
+        % Use the AISC to check the member failure
+        [passi,modeStri,Pni,stressRatioi]=Check_Truss_AISC(Ni,Ai,Ei,Lci,ri,Fy);
+    
+        modeStr{k}=modeStri;
+        Pn(k)=Pni;
+        StressRatio(k)=stressRatioi;
+        passYN(k)=passi;
+    end
+
+    if max(StressRatio)<1
+        fprintf('All Truss Safe \n');
+    else
+        fprintf('Failure Detected \n');
+        break
+    end
+    
+end
+
+% Find Stiffness
+Uaverage=-mean(squeeze(Uhis(end,[3*N-3,3*N-1],3)));
+Kstiff=total_F/Uaverage;
+
+% Output results
+fprintf('-----------------------------\n');
+fprintf('Total length of all bars: %.2f m\n', L_total);
+fprintf('Total bar weight: %.2f N\n', W_bar);
+fprintf('Failure load is: %.2f N\n', total_F);
+fprintf('Mid-span deflection at failure is: %.3f m\n', Uaverage);
+fprintf('Stiffness is: %.2f m\n', Kstiff);
+fprintf('span/disp at failure is: %.2f \n', 16/Uaverage);
+fprintf('capacity/weight: %.2f \n', total_F/W_bar);
+fprintf('-----------------------------\n');
+
+% Plot the bar stress
+truss_stress=truss_strain.*(bar.E_vec);
+plots.Plot_Shape_Bar_Stress(truss_stress);
+
+% Plot failed bar stress
+plots.Plot_Shape_Bar_Failure(passYN);
 

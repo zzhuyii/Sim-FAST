@@ -34,6 +34,9 @@ classdef Plot_Kirigami_Truss < handle
         % Plot the shape of the system with rot spr number
         Plot_Shape_Spr_Number(obj);
 
+        % Plot the shape of the system with 3Node rot spr number
+        Plot_Shape_RotSpr_3N_Number(obj)
+
         % Plot the shape of the system with cst number
         Plot_Shape_CST_Number(obj)
 
