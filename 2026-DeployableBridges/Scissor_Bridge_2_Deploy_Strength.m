@@ -14,7 +14,7 @@ H=2; % (m)
 L=2; % (m)
 
 % Deployment Ratio
-DepRate=0; % 1 is fully deployed, 0 is compact
+DepRate=1; % 1 is fully deployed, 0 is compact
 
 % Load the deformation history
 % Step 1 = compact (DepRate=0), Step 700 = fully deployed (DepRate=1)

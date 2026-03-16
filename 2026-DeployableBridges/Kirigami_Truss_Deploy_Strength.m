@@ -16,7 +16,7 @@ N=8;
 % Load the deformation history
 UhisNew=load('KirigamiUhis.mat');
 UhisNew=UhisNew.Uhis;
-DepRate=0.8; % 1 is fully deployed, 0 is compact
+DepRate=1; % 1 is fully deployed, 0 is compact
 DepStep = max(1, int32((1 - DepRate) * 1000));
 
 % The cross section of this bridge is:

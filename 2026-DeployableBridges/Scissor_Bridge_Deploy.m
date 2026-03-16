@@ -275,6 +275,9 @@ ta.supp(66,:) =  [ 66   0 1 1];
 base_L0=actBar.L0_vec; 
 ta.targetL0=base_L0;
 
+nodeNum = size(node.coordinates_mat, 1);
+Uhis = zeros(2000, nodeNum, 3);
+
 for step=1:2000
 
     ta.increStep = 1; 
@@ -309,6 +312,19 @@ for step=1:2000
 
     a=1;
 end
+
+
+plots.fileName = 'Scissor_Bridge_Deploy.gif';
+plots.Plot_Deformed_His(Uhis(1:20:end,:,:));
+U_end = squeeze(Uhis(end, :, :));  
+plots.Plot_Deformed_Shape(U_end);
+
+% Store the deformation history
+save('ScissorUhis.mat', 'Uhis');
+UhisNew=load('ScissorUhis.mat');
+UhisNew=UhisNew.Uhis;
+
+
 % 
 % 
 % plots.Plot_Deformed_Shape(squeeze(Uhis(end,:,:)))
@@ -353,13 +369,3 @@ end
 % 
 %     a=1;
 % end
-
-plots.fileName = 'Scissor_Bridge_Deploy.gif';
-plots.Plot_Deformed_His(Uhis(1:20:end,:,:));
-U_end = squeeze(Uhis(end, :, :));  
-plots.Plot_Deformed_Shape(U_end);
-
-% Store the deformation history
-save('ScissorUhis.mat', 'Uhis');
-UhisNew=load('ScissorUhis.mat');
-UhisNew=UhisNew.Uhis;

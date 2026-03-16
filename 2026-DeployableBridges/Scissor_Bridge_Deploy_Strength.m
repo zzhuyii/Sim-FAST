@@ -14,7 +14,7 @@ H=2; % (m)
 L=2; % (m)
 
 % Deployment Ratio
-DepRate=0; % 1 is fully deployed, 0 is compact
+DepRate=1; % 1 is fully deployed, 0 is compact
 
 % Load the deformation history
 % Step 1 = compact (DepRate=0), Step 200 = fully deployed (DepRate=1)
@@ -283,8 +283,10 @@ lastNode1 = 8*N+1;   % right end bottom front
 lastNode2 = 8*N+2;   % right end bottom back
 nr.supp = [1          1 1 1;
            2          1 1 1;
-           lastNode1  0 0 1;
-           lastNode2  0 0 1;
+           3          1 1 1;
+           4          1 1 1;
+           % lastNode1  0 0 1;
+           % lastNode2  0 0 1;
            ];
 
 

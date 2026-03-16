@@ -20,7 +20,7 @@ N=4;
 % Load the deformation history
 UhisNew=load('OrigamiUhis.mat');
 UhisNew=UhisNew.Uhis;
-DepRate=0.7; % 1 is fully deployed, 0 is compact
+DepRate=1; % 1 is fully deployed, 0 is compact
 DepStep = max(1, int32((1 - DepRate) * 300));
 
 % HSS 4X3X5/16 A500 Grade C Fy=50ksi
