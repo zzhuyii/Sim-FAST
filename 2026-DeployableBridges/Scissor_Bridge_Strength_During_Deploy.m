@@ -13,14 +13,68 @@ H=2; % (m)
 L=2; % (m)
 
 % Deployment Ratio
-DepRate=0.2; % 1 is fully deployed, 0 is compact
+DepRate=0.3; % 1 is fully deployed, 0 is compact
 
-% HSS 4X3X5/16 A500 Grade C Fy=50ksi
-barA=0.0023; % 3.52 in^2
+% Primary member
+% HSS 8X4X5/16 A500 Grade C Fy=50ksi
+barA=0.00415;
 barE=2*10^11;
 
-% We will use the weak axis
-I=1.88*10^-6; 
+% Second moment of inertia in both direction
+Iy=21.2*10^-6; 
+Ix=7.16*10^-6; 
+
+% Brace Member
+% HSS 4X2X5/16
+barA_brace=0.0019;
+
+% -----------------------------------------------------------------------
+%  AASHTO LRFD Material & Section Properties
+%  (defined once outside the loop — these never change)
+% -----------------------------------------------------------------------
+Fy  = 345e6;    % Yield strength (Pa), ASTM A500 Gr.C
+Fu  = 427e6;    % Tensile strength (Pa), A500 Gr.C
+E   = barE;     % Elastic modulus (Pa)
+
+% Resistance factors — AASHTO LRFD Art. 6.5.4.2
+phi_ty = 0.95;  % Tension yielding (gross section)
+phi_tf = 0.80;  % Tension fracture (net section)
+phi_c  = 0.95;  % Axial compression
+
+% Net section parameters (welded connection)
+% AASHTO LRFD Art. 6.8.2.1
+Ag = barA;
+An = barA*0.9;   % Assume bolt hole is 0.1 of gross area
+U  = 1.0;    % Shear lag factor
+Rp = 1.0;    % Hole reduction factor (drilled/reamed holes) 
+
+% Radius of gyration (weak axis governs)
+r_val = sqrt(Ix/barA);
+
+% Effective length factor
+K = 1.0;
+
+%  Section: HSS 8x4x5/16, A500 Gr.C
+bt = 102/7.94;   % b/t ratio of wider face  (flange), from AISC tables
+ht = 203/7.94;   % h/t ratio of narrower face (web),  from AISC tables
+
+% Limiting slenderness for uniformly compressed plate elements in HSS
+% AASHTO LRFD Art. 6.9.4.2.1, Table 6.9.4.2.1-1
+lambda_r = 1.28 * sqrt(E / Fy);
+
+local_buckle_bt_pass = (bt <= lambda_r);
+local_buckle_ht_pass = (ht <= lambda_r);
+local_buckle_pass    = local_buckle_bt_pass && local_buckle_ht_pass;
+
+fprintf('--- Local Buckling Check (AASHTO LRFD Art. 6.9.4.2) ---\n');
+if local_buckle_pass
+    fprintf('  Section is non-slender (local buckling OK)\n');
+else
+    fprintf('  WARNING: Section FAILS local buckling slenderness limit\n');
+end
+
+
+
 
 % We assume a soft panel so that only the truss is taking global load
 % Thus, panel Young's modulus is 200 MPa
@@ -30,7 +84,7 @@ panel_v=0.3;
 
 % The three-node rotational spring stiffness
 barL=sqrt(H^2+L^2)/2;
-kspr=barE*I/barL;
+kspr=barE*Iy/barL;
 
 
 
@@ -140,7 +194,16 @@ for i=1:N
         8*(i-1)+6  8*(i-1)+12;
 
         8*(i-1)+2  8*(i-1)+7;
+        8*(i-1)+1  8*(i-1)+8;
         8*(i-1)+8  8*(i-1)+9;
+        8*(i-1)+7  8*(i-1)+10;
+        ];
+
+    bar.A_vec=[bar.A_vec;
+        ones(4,1)*barA;
+        ones(4,1)*barA_brace;
+        ones(8,1)*barA;
+        ones(4,1)*barA_brace;
         ];
 end
 
@@ -151,9 +214,12 @@ bar.node_ij_mat=[
     8*(i-1)+3  8*(i-1)+4;     
     ];
 
+bar.A_vec=[bar.A_vec;
+    ones(2,1)*barA_brace;
+    ];
+
 barNum=size(bar.node_ij_mat);
 barNum=barNum(1);
-bar.A_vec=barA*ones(barNum,1);
 bar.E_vec=barE*ones(barNum,1);
 
 plots.Plot_Shape_Node_Number();
@@ -260,6 +326,9 @@ L_total=0;
 barNodeMat=bar.node_ij_mat;
 coords=node.coordinates_mat;
 
+% Total bar weight (Newtons)
+W_bar=0;
+
 for i=1:size(barNodeMat,1)
     n1=barNodeMat(i,1);
     n2=barNodeMat(i,2);
@@ -267,11 +336,16 @@ for i=1:size(barNodeMat,1)
     p2=coords(n2,:);
     len=norm(p1-p2);
     L_total=L_total+len;
+    W_bar=W_bar+(len*bar.A_vec(i)*rho_steel*g);
 end
 
-% Total bar weight (Newtons)
-W_bar=A_bar*L_total*rho_steel*g;   
 
+% -------------------------------------------------------------------
+% Assume the deck is made with a 3 cm thick wood plate
+% Supported using a 20 cm by 10 cm beam with 50 cm spacing
+% The total weight of deck is:
+% -------------------------------------------------------------------
+W_deck=2*(0.03+10/50*0.2)*16*1000*9.8;
 
 
 
@@ -301,7 +375,7 @@ for i=1:5
 
     % Apply self weight to the bridge
     nodeNum=size(node.coordinates_mat,1);
-    force=W_bar/nodeNum/5*i;
+    force=(W_bar+W_deck)/nodeNum/5*i;
 
     nr.load=[(1:nodeNum)'  zeros(nodeNum,1)...
         zeros(nodeNum,1)   -force*ones(nodeNum,1)];
@@ -320,62 +394,73 @@ for i=1:5
 
     % axial force in each bar (N)
     internal_force=truss_strain.*(bar.E_vec).*(bar.A_vec); 
-
-    barNum=numel(internal_force);
-    
+       
     % effective length KL
-    L0_vec=bar.L0_vec(:);
-    K=1.0;                
+    L0_vec=bar.L0_vec(:);         
     Lc=K.*L0_vec;
     
-    % find r value: r = sqrt(I/A)
-    r=sqrt(I/barA)*ones(barNum);
-    
-    % yield stress
-    Fy=345*10^6;  % Q345 steel or Grade50 (345MPa,50ksi)
-    
-    % pass = 1 means member is not failing
-    passYN=false(barNum,1);
-
-    % Critical Stress Ratio
-    StressRatio=NaN(barNum,1);
-
-    % Failure mode
-    modeStr=cell(barNum,1);
-
-    % critical failure load
-    Pn=NaN(barNum,1);
-
-    % slenderness ratio: KL/r
-    slender=NaN(barNum,1);   
-
-    % Euler stress (Pa)
-    Fe=NaN(barNum,1);   
-
-    % Critical stress requirement from AISC (Pa)
-    Fcr=NaN(barNum,1);   
+    % Output arrays (reset each load step)
+    barNum=numel(internal_force);
+    passYN      = false(barNum, 1);  % pass = 1 means member is not failing
+    DCR         = NaN(barNum, 1);  % Demand over capacity ratio (Critical Stress) Ratio
+    phi_Rn      = NaN(barNum, 1);  % Failure mode
+    modeStr     = cell(barNum, 1);  % Failure mode
+    slender_chk = cell(barNum, 1);  % Slenderness ratio check
 
     for k=1:barNum
-        Ni=internal_force(k);
-        Ai=bar.A_vec(k);
-        Ei=bar.E_vec(k);
-        Lci=Lc(k);
-        ri=r(k);
+        
+        Pu_k=1.5*internal_force(k);
+        % Dead load factor use 1.5
+        Ag_k=bar.A_vec(k);
+        An_k=An;
+        E_k=bar.E_vec(k);
+        KL_k=Lc(k);
+        r_k=r_val;
+        Fy_k=Fy;
+        Fu_k=Fu;
+        Rp_k=Rp;      
 
-        % Use the AISC to check the member failure
-        [passi,modeStri,Pni,stressRatioi]=Check_Truss_AISC(Ni,Ai,Ei,Lci,ri,Fy);
+        % Use the AASTHO to check the member failure
+        [pass_k,modeStr_k,Pn_k,phi,phiPn,DCR_k]=Check_Truss_LRFD(Pu_k,...
+            Ag_k, An_k, E_k, KL_k, r_k, Fy_k, Fu_k, Rp_k);
     
-        modeStr{k}=modeStri;
-        Pn(k)=Pni;
-        StressRatio(k)=stressRatioi;
-        passYN(k)=passi;
+        passYN(k)=pass_k;
+        modeStr{k}=modeStr_k;
+        Pn(k)=Pn_k;
+        DCR(k)=DCR_k;
+        
     end
     
-    if max(StressRatio)<1
-        fprintf('All Truss Safe \n');
+    if all(passYN)
+        fprintf('Step %2d : All Truss Members Safe (AASHTO LRFD)\n', i);
     else
-        fprintf('Failure Detected \n');
+        fprintf('Step %2d : Member Failure Detected (AASHTO LRFD)\n', i);
         break
+    end
+
+    % Check bending strength of scissor
+    rotSpr3N.Solve_Global_Theta(node,U_end);
+    thetaReal=rotSpr3N.theta_current_vec;
+    thetaStressFree=rotSpr3N.theta_stress_free_vec;
+    rotSpr3N_K=rotSpr3N.rot_spr_K_vec;
+
+    MomentVec=abs(thetaReal-thetaStressFree).*rotSpr3N_K;
+    maxMoment=1.5*max(MomentVec);
+    % Dead load factor of 1.5;
+    momentCapacity=Fy*Iy/0.0762;
+
+    % -------------------------------------------------------------------
+    % Mn= Rf Rb Rpc Myce
+    % C6.12.2.2.2c
+    % Rf Rb Rpc may be taken as 1.0 and Myce may be the fundamental yield
+    % moment of the gross cross section. We have a doubly symmetric HSS
+    % steel cross section. These shall be applied. 
+    % -------------------------------------------------------------------
+
+    if momentCapacity>maxMoment
+        fprintf('Step %2d : Max Moment %2d < Capacity  %2d \n', i, maxMoment,momentCapacity);
+    else 
+        fprintf('Step %2d : Max Moment %2d > Capacity  %2d \n', i, maxMoment,momentCapacity);
     end
 
 end
@@ -388,7 +473,7 @@ Uaverage=-mean(squeeze(Uhis(end,[65,66],3)));
 fprintf('-----------------------------\n');
 fprintf('Total length of all bars: %.2f m\n', L_total);
 fprintf('Total bar weight: %.2f N\n', W_bar);
-fprintf('Maximum stress ratio: %.2f \n', max(StressRatio));
+fprintf('Maximum stress ratio: %.2f \n', max(DCR));
 fprintf('Tip deflection: %.2f \n', Uaverage);
 fprintf('-----------------------------\n');
 
@@ -400,6 +485,7 @@ plots.Plot_Shape_Bar_Stress(truss_stress);
 % Plot failed bar stress
 plots.Plot_Shape_Bar_Failure(passYN);
 
-
+% Plot deformed shape
+plots.Plot_Deformed_Shape(U_end);
 
 

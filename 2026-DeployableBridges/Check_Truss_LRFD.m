@@ -1,13 +1,7 @@
-function [pass, modeStr, Pn, phi, phiPn, DCR] = Check_Truss_LRFD(Pu, A, E, KL, r, Fy, ...
-                                                                    phi_ty, phi_cb, ...
-                                                                    Fu, An, Rp, U_shlag, phi_uf, ...
-                                                                    memberType)
-%CHECK_TRUSS_LRFD  AASHTO LRFD axial member check (Pu vs phi*Pn)
-%
-% Purpose:
-%   Axial-only truss member check under LRFD format:
-%       Demand <= phi * Rn
-%   Here: Demand = |Pu|, Rn = Pn (nominal axial resistance)
+function [pass, modeStr, Pn, phi, phiPn, DCR] = Check_Truss_LRFD(Pu, Ag, An, E, KL, r, ...
+                                                                 Fy, Fu, Rp )
+
+%CHECK_TRUSS_LRFD  AASHTO LRFD axial member check 
 %
 % =========================================================================
 % AASHTO LRFD REFERENCES:
@@ -18,7 +12,7 @@ function [pass, modeStr, Pn, phi, phiPn, DCR] = Check_Truss_LRFD(Pu, A, E, KL, r
 %   Compression slenderness : Article 6.9.3
 % =========================================================================
 %
-% INPUTS (required):
+% Variables:
 %   Pu          : axial force (N). Tension positive, compression negative.
 %   A           : gross cross-sectional area Ag (m^2)
 %   E           : elastic modulus (Pa)
@@ -26,13 +20,13 @@ function [pass, modeStr, Pn, phi, phiPn, DCR] = Check_Truss_LRFD(Pu, A, E, KL, r
 %   r           : governing radius of gyration (m) — use min(rx,ry)
 %   Fy          : specified minimum yield strength (Pa)
 %
-% INPUTS (optional — resistance factors):
+% Variables: — resistance factors:
 %   phi_ty      : phi for tension yielding in gross section
 %                 AASHTO 6.5.4.2: phi_y = 0.95
 %   phi_cb      : phi for axial compression, steel only
 %                 AASHTO 6.5.4.2: phi_c = 0.95
 %
-% INPUTS (optional — net section fracture per 6.8.2.1-2):
+% Variables: — net section fracture per 6.8.2.1-2:
 %   Fu          : tensile strength (Pa). Default: 427e6 (A500 Gr.C)
 %   An          : net area (m^2). Default: An = Ag (welded, no holes)
 %   Rp          : hole factor. 1.0 = drilled/reamed; 0.90 = punched full size
@@ -43,10 +37,10 @@ function [pass, modeStr, Pn, phi, phiPn, DCR] = Check_Truss_LRFD(Pu, A, E, KL, r
 %   phi_uf      : phi for tension fracture in net section
 %                 AASHTO 6.5.4.2: phi_u = 0.80
 %
-% INPUTS (optional — member classification for slenderness limits):
+% Member classification for slenderness limits:
 %   memberType  : string — "TopChord", "BottomChord" (primary)
 %                           or "Web" (secondary)
-%                 Default: "Web" (conservative — uses tighter limit)
+%                 Assume all members are primary
 %
 % OUTPUTS:
 %   pass        : true if DCR <= 1.0
@@ -62,47 +56,17 @@ function [pass, modeStr, Pn, phi, phiPn, DCR] = Check_Truss_LRFD(Pu, A, E, KL, r
 %   Tension primary       : l/r  <= 200  (AASHTO 6.8.4)
 %   Tension secondary     : l/r  <= 240  (AASHTO 6.8.4)
 
-    % =========================================================================
-    % DEFAULT ARGUMENTS
-    % =========================================================================
+
 
     % Resistance factors — AASHTO LRFD 6.5.4.2
-    if nargin < 7  || isempty(phi_ty),   phi_ty   = 0.95;  end  % 6.5.4.2: tension yielding
-    if nargin < 8  || isempty(phi_cb),   phi_cb   = 0.95;  end  % 6.5.4.2: axial compression, steel only
+    phi_ty   = 0.95;  % 6.5.4.2: tension yielding
+    phi_cb   = 0.95;  % 6.5.4.2: axial compression, steel only
+    phi_uf   = 0.80;  % 6.5.4.2: fracture in net section
 
     % Net section fracture parameters — AASHTO 6.8.2.1-2
-    if nargin < 9  || isempty(Fu),       Fu       = 427e6; end  % A500 Gr.C tensile strength (Pa)
-    if nargin < 10 || isempty(An),       An       = A;     end  % default: An = Ag (no holes)
-    if nargin < 11 || isempty(Rp),       Rp       = 1.0;   end  % drilled/reamed holes
-    if nargin < 12 || isempty(U_shlag),  U_shlag  = 1.0;   end  % all elements engaged
-    if nargin < 13 || isempty(phi_uf),   phi_uf   = 0.80;  end  % 6.5.4.2: fracture in net section
-
-    % Member classification for slenderness limit selection
-    if nargin < 14 || isempty(memberType)
-        memberType = "Web";   % conservative default (uses tighter limit)
-    end
-
-    % =========================================================================
-    % INPUT VALIDATION
-    % =========================================================================
-    if A <= 0 || E <= 0 || Fy <= 0 || r <= 0 || KL <= 0
-        pass    = false;
-        modeStr = 'INVALID_INPUT';
-        Pn      = NaN; phi = NaN; phiPn = NaN; DCR = NaN;
-        return
-    end
-
-    % =========================================================================
-    % SLENDERNESS RATIO
-    % =========================================================================
+    U_shlag  = 1.0;   % shear lag factor for connections, here is 1.0
+    
     KLr = KL / r;   % KL/r (dimensionless); used for both compression and tension checks
-
-    % Primary vs secondary classification
-    isPrimary = (memberType == "TopChord" || memberType == "BottomChord");
-
-    % =========================================================================
-    % MEMBER CHECK: TENSION or COMPRESSION
-    % =========================================================================
 
     if Pu >= 0
         % =====================================================================
@@ -115,14 +79,14 @@ function [pass, modeStr, Pn, phi, phiPn, DCR] = Check_Truss_LRFD(Pu, A, E, KL, r
 
         % Slenderness check — AASHTO 6.8.4
         % NOTE: l/r uses unbraced length only (no K factor for tension members)
-        Lr_limit = 200 * isPrimary + 240 * (~isPrimary);
+        Lr_limit = 200; 
         if KLr > Lr_limit
-            fprintf('[WARN] Bar (%s): l/r = %.1f > AASHTO 6.8.4 limit = %d\n', ...
-                    memberType, KLr, Lr_limit);
+            fprintf('[WARN] Bar l/r = %.1f > AASHTO 6.8.4 limit = %d\n', ...
+                    KLr, Lr_limit);
         end
 
         % Eq. 6.8.2.1-1: Gross section yielding
-        Pny = Fy * A;
+        Pny = Fy * Ag;
         Pr_yield    = phi_ty * Pny;
 
         % Eq. 6.8.2.1-2: Net section fracture
@@ -160,15 +124,15 @@ function [pass, modeStr, Pn, phi, phiPn, DCR] = Check_Truss_LRFD(Pu, A, E, KL, r
         % =====================================================================
 
         % Slenderness check — AASHTO 6.9.3
-        KLr_limit = 120 * isPrimary + 140 * (~isPrimary);
+        KLr_limit = 120;
         if KLr > KLr_limit
-            fprintf('[WARN] Bar (%s): KL/r = %.1f > AASHTO 6.9.3 limit = %d\n', ...
-                    memberType, KLr, KLr_limit);
+            fprintf('[WARN] Bar KL/r = %.1f > AASHTO 6.9.3 limit = %d\n', ...
+                    KLr, KLr_limit);
         end
 
         % Nominal yield and elastic buckling resistances
-        Po = Fy * A;                             % nominal yield resistance (N)
-        Pe = (pi^2 * E * A) / (KLr^2);          % elastic critical buckling resistance (N)
+        Po = Fy * Ag;                             % nominal yield resistance (N)
+        Pe = (pi^2 * E * Ag) / (KLr^2);          % elastic critical buckling resistance (N)
 
         ratio = Po / Pe;   % = (KL/r)^2 * Fy/(pi^2*E)
 
@@ -185,18 +149,11 @@ function [pass, modeStr, Pn, phi, phiPn, DCR] = Check_Truss_LRFD(Pu, A, E, KL, r
         end
 
         phi = phi_cb;
-
-    end
-
-    % =========================================================================
-    % LRFD DEMAND-TO-CAPACITY RATIO
-    % =========================================================================
-    if Pu >= 0
-        % phiPn already set in tension branch above
-    else
         phiPn = phi * Pn;
+
     end
 
+    % LRFD DEMAND-TO-CAPACITY RATIO
     DCR  = abs(Pu) / abs(phiPn);
     pass = (DCR <= 1.0);
 
