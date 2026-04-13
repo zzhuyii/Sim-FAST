@@ -21,8 +21,8 @@ barA=0.00415;
 barE=2*10^11;
 
 % Second moment of inertia in both direction
-Iy=21.2*10^-6; 
-Ix=7.16*10^-6;  
+Ix=21.2*10^-6; 
+Iy=7.16*10^-6;  
 
 % -----------------------------------------------------------------------
 %  AASHTO LRFD Material & Section Properties
@@ -50,9 +50,9 @@ r_val = sqrt(Ix/barA);
 % Effective length factor
 K = 1.0;
 
-%  Section: HSS 4x3x5/16, A500 Gr.C
-bt = 4/0.31;   % b/t ratio of wider face  (flange), from AISC tables
-ht = 6/0.31;   % h/t ratio of narrower face (web),  from AISC tables
+%  Section: HSS 8X4X5/16, A500 Gr.C
+bt = 10.7;   % b/t ratio of wider face  (flange), from AISC tables
+ht = 24.5;   % h/t ratio of narrower face (web),  from AISC tables
 
 % Limiting slenderness for uniformly compressed plate elements in HSS
 % AASHTO LRFD Art. 6.9.4.2.1, Table 6.9.4.2.1-1
@@ -118,7 +118,7 @@ node.coordinates_mat=[node.coordinates_mat;
 %% Define Plotting Functions
 plots=Plot_Kirigami_Truss;
 plots.assembly=assembly;
-plots.displayRange=[-1; 4*(N+1); -3; 7; -2; 3];
+plots.displayRange=[-1; 4*(N+1); -1; 4; -1; 3];
 
 plots.viewAngle1=20;
 plots.viewAngle2=20;

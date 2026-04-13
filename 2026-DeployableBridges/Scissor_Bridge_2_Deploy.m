@@ -5,7 +5,7 @@ cd('G:\My Drive\Dr. Zhu\Code\Sim-FAST\2026-DeployableBridges');
 
 %% Initialize the scissor 
 % Number of Sections
-N=8;
+N=1;
 
 % Height of the bridge
 H=2; % (m)

@@ -6,7 +6,7 @@ cd('G:\My Drive\Dr. Zhu\Code\Sim-FAST\2026-DeployableBridges');
 
 %% Initialize the scissor 
 % Number of Sections
-N=8;
+N=1;
 
 % Height of the bridge
 H=2; % (m)
@@ -242,35 +242,31 @@ assembly.Initialize_Assembly;
 ta=Solver_NR_TrussAction;
 ta.assembly = assembly;
 
-ta.supp = [(1:68)'  zeros(68,1)  ones(68,1)  zeros(68,1)];
-ta.supp(1,:) =  [ 1   1 1 1];
-ta.supp(2,:) =  [ 2   1 1 1];
-ta.supp(3,:) =  [ 3   1 1 0];
-ta.supp(4,:) =  [ 4   1 1 0];
-ta.supp(9,:) =  [ 9   0 1 1];
-ta.supp(10,:) =  [ 10   0 1 1];
-ta.supp(17,:) =  [ 17   0 1 1];
-ta.supp(18,:) =  [ 18   0 1 1];
-ta.supp(25,:) =  [ 25   0 1 1];
-ta.supp(26,:) =  [ 26   0 1 1];
-ta.supp(33,:) =  [ 33   0 1 1];
-ta.supp(34,:) =  [ 34   0 1 1];
-ta.supp(41,:) =  [ 41   0 1 1];
-ta.supp(42,:) =  [ 42   0 1 1];
-ta.supp(49,:) =  [ 49   0 1 1];
-ta.supp(50,:) =  [ 50   0 1 1];
-ta.supp(65,:) =  [ 65   0 1 1];
-ta.supp(66,:) =  [ 66   0 1 1];
 
+nodeNum = size(node.coordinates_mat, 1);  % 12 for N=1
 
+% Initialize all nodes: y-direction fixed, x and z free
+ta.supp = zeros(nodeNum, 4);
+for k = 1:nodeNum
+    ta.supp(k,:) = [k  0  1  0];  % y fixed, x and z free
+end
 
-% ta.supp = [1    1 1 1;
-%            2    1 1 1;
-%            3    1 1 0;
-%            4    1 1 0;
-%            65   0 0 1;
-%            66   0 0 1;
-%            ];
+% Bottom fixed-end nodes 1-2 (at x=0, z=0): pin, all fixed
+ta.supp(1,:) = [1   1 1 1];  % pin
+ta.supp(2,:) = [2   1 1 1];  % pin
+
+% Top fixed-end nodes 3-4 (at x=0, z=L): x and y fixed, z FREE to allow folding
+ta.supp(3,:) = [3   1 1 0];  % x, y fixed; z free
+ta.supp(4,:) = [4   1 1 0];  % x, y fixed; z free
+
+% Bottom roller-end nodes 9-10 (at x=L*N, z=0): y and z fixed, x free
+endStart = 8*N + 1;
+ta.supp(endStart,  :) = [endStart    0 1 1];  % node 9
+ta.supp(endStart+1,:) = [endStart+1  0 1 1];  % node 10
+
+% Top roller-end nodes 11-12 (at x=L*N, z=L): y fixed only, x and z free
+ta.supp(endStart+2,:) = [endStart+2  0 1 0];  % node 11: y fixed, z free
+ta.supp(endStart+3,:) = [endStart+3  0 1 0];  % node 12: y fixed, z free
 
 base_L0=actBar.L0_vec; 
 ta.targetL0=base_L0;
@@ -324,6 +320,37 @@ save('ScissorUhis.mat', 'Uhis');
 UhisNew=load('ScissorUhis.mat');
 UhisNew=UhisNew.Uhis;
 
+
+
+% ta.supp = [(1:68)'  zeros(68,1)  ones(68,1)  zeros(68,1)];
+% ta.supp(1,:) =  [ 1   1 1 1];
+% ta.supp(2,:) =  [ 2   1 1 1];
+% ta.supp(3,:) =  [ 3   1 1 0];
+% ta.supp(4,:) =  [ 4   1 1 0];
+% ta.supp(9,:) =  [ 9   0 1 1];
+% ta.supp(10,:) =  [ 10   0 1 1];
+% ta.supp(17,:) =  [ 17   0 1 1];
+% ta.supp(18,:) =  [ 18   0 1 1];
+% ta.supp(25,:) =  [ 25   0 1 1];
+% ta.supp(26,:) =  [ 26   0 1 1];
+% ta.supp(33,:) =  [ 33   0 1 1];
+% ta.supp(34,:) =  [ 34   0 1 1];
+% ta.supp(41,:) =  [ 41   0 1 1];
+% ta.supp(42,:) =  [ 42   0 1 1];
+% ta.supp(49,:) =  [ 49   0 1 1];
+% ta.supp(50,:) =  [ 50   0 1 1];
+% ta.supp(65,:) =  [ 65   0 1 1];
+% ta.supp(66,:) =  [ 66   0 1 1];
+
+
+
+% ta.supp = [1    1 1 1;
+%            2    1 1 1;
+%            3    1 1 0;
+%            4    1 1 0;
+%            65   0 0 1;
+%            66   0 0 1;
+%            ];
 
 % 
 % 

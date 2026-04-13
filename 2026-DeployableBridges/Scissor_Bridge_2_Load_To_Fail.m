@@ -18,8 +18,8 @@ barA=0.00415;
 barE=2*10^11;
 
 % Second moment of inertia in both direction
-Iy=21.2*10^-6; 
-Ix=7.16*10^-6;  
+Ix=21.2*10^-6; 
+Iy=7.16*10^-6;  
 
 % Brace Member
 % HSS 4X2X5/16
@@ -52,9 +52,9 @@ r_val = sqrt(Ix/barA);
 % Effective length factor
 K = 1.0;
 
-%  Section: HSS 4x3x5/16, A500 Gr.C
-bt = 4/0.31;   % b/t ratio of wider face  (flange), from AISC tables
-ht = 6/0.31;   % h/t ratio of narrower face (web),  from AISC tables
+%  Section: HSS 8X4X5/16, A500 Gr.C
+bt = 10.7;   % b/t ratio of wider face  (flange), from AISC tables
+ht = 24.5;   % h/t ratio of narrower face (web),  from AISC tables
 
 % Limiting slenderness for uniformly compressed plate elements in HSS
 % AASHTO LRFD Art. 6.9.4.2.1, Table 6.9.4.2.1-1
