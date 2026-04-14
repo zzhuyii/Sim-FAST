@@ -57,8 +57,8 @@ r_val = sqrt(Ix/barA);
 K = 1.0;
 
 %  Section: HSS 8x4x5/16, A500 Gr.C
-bt = 102/7.94;   % b/t ratio of wider face  (flange), from AISC tables
-ht = 203/7.94;   % h/t ratio of narrower face (web),  from AISC tables
+bt = 10.7;   % b/t ratio of wider face  (flange), from AISC tables
+ht = 24.5;   % h/t ratio of narrower face (web),  from AISC tables
 
 % Limiting slenderness for uniformly compressed plate elements in HSS
 % AASHTO LRFD Art. 6.9.4.2.1, Table 6.9.4.2.1-1
@@ -505,6 +505,6 @@ plots.Plot_Shape_Bar_Stress(truss_stress);
 % Plot failed bar stress
 plots.Plot_Shape_Bar_Failure(passYN);
 plots.Plot_Deformed_Shape(squeeze(Uhis(end,:,:)))
-
+plots.Plot_Deformed_His(Uhis);
 
 

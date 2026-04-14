@@ -47,9 +47,9 @@ r_val = sqrt(Ix/barA);
 % Effective length factor
 K = 1.0;
 
-%  Section: HSS 4x3x5/16, A500 Gr.C
-bt = 4/0.31;   % b/t ratio of wider face  (flange), from AISC tables
-ht = 6/0.31;   % h/t ratio of narrower face (web),  from AISC tables
+%  Section: HSS 8x4x5/16, A500 Gr.C
+bt = 10.7;   % b/t ratio of wider face  (flange), from AISC tables
+ht = 24.5;   % h/t ratio of narrower face (web),  from AISC tables
 
 % Limiting slenderness for uniformly compressed plate elements in HSS
 % AASHTO LRFD Art. 6.9.4.2.1, Table 6.9.4.2.1-1
@@ -273,7 +273,7 @@ end
 rotNum=size(rot_spr_4N.node_ijkl_mat);
 rotNum=rotNum(1);
 
-rot_spr_4N.rot_spr_K_vec=(10^5)*ones(rotNum,1);
+rot_spr_4N.rot_spr_K_vec=(10^6)*ones(rotNum,1);
 
 plots.Plot_Shape_Node_Number;
 plots.Plot_Shape_Spr_Number;
@@ -441,3 +441,4 @@ plots.Plot_Shape_Bar_Failure(passYN);
 
 % Plot deformed shape
 plots.Plot_Deformed_Shape(U_end);
+plots.Plot_Deformed_His(Uhis);

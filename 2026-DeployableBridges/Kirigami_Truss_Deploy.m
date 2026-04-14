@@ -22,8 +22,8 @@ barE=2*10^11;
 I=1.88*10^-6; 
 
 % We assume a soft panel so that only the truss is taking global load
-% Thus, panel Young's modulus is 200 MPa
-panel_E=2*10^8;
+% Thus, panel Young's modulus is 20 MPa
+panel_E=2*10^7;
 panel_t=0.01;
 panel_v=0.3;
 
