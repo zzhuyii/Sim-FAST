@@ -5,7 +5,7 @@ tic
 
 %% Define Geometry
 % Number of Sections
-N=4;
+N=1;
 
 % Height of the bridge
 L=2;
@@ -240,7 +240,7 @@ plots.Plot_Deformed_Shape(squeeze(Uhis2(end,:,:)))
 
 Uhis=cat(1,Uhis1,Uhis2(1:10:end,:,:));
 
-plots.fileName='Origami_Bridge_Deploy.gif';
+plots.fileName='Origami_Bridge_Deploy_Unit.gif';
 plots.Plot_Deformed_His(Uhis(1:4:end,:,:))
 
 % store the deformation history

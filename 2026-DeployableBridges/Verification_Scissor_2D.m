@@ -238,3 +238,4 @@ strain1=M1/barE_A6N01/barI_A6N01*0.08/10^-6; %(unit ppm)
 strain2=M2/barE_A6N01/barI_A6N01*0.08/10^-6; %(unit ppm)
 
 fprintf('The maximum strain at the scissor hinge location are: %d and %d \n', strain1, strain2)
+

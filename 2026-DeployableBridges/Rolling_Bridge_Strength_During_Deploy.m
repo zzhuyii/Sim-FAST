@@ -89,7 +89,7 @@ activeBarE=2*10^11;
 % Load the deformation history
 UhisNew=load('RollingUhis.mat');
 UhisNew=UhisNew.Uhis;
-DepRate=0.3; % 1 is fully deployed, 0 is compact
+DepRate=1; % 1 is fully deployed, 0 is compact
 DepStep = max(1, int32((1 - DepRate) * 800));
 
 

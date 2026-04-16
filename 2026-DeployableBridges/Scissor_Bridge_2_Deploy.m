@@ -1,7 +1,6 @@
 clear all;
 clc;
 close all;
-cd('G:\My Drive\Dr. Zhu\Code\Sim-FAST\2026-DeployableBridges');
 
 %% Initialize the scissor 
 % Number of Sections
@@ -13,12 +12,13 @@ H=2; % (m)
 % Length of the section
 L=2; % (m)
 
-% HSS 4X3X5/16 A500 Grade C Fy=50ksi
-barA=0.0023; % 3.52 in^2
+% HSS 8X4X5/16 A500 Grade C Fy=50ksi
+barA=0.00415;
 barE=2*10^11;
 
-% We will use the weak axis
-I=1.88*10^-6; 
+% Second moment of inertia in both direction
+Iy=21.2*10^-6; 
+Ix=7.16*10^-6; 
 
 % We assume a soft panel so that only the truss is taking global load
 % Thus, panel Young's modulus is 200 MPa
@@ -28,7 +28,7 @@ panel_v=0.3;
 
 % The three-node rotational spring stiffness
 barL=sqrt(H^2+L^2);
-kspr=barE*I/barL;
+kspr=barE*Iy/barL;
 
 
 
@@ -304,8 +304,3 @@ U_end = squeeze(Uhis(end, :, :));
 plots.Plot_Deformed_Shape(U_end);
 
 
-
-% Store the deformation history
-save('ScissorUhis2.mat', 'Uhis');
-UhisNew=load('ScissorUhis2.mat');
-UhisNew=UhisNew.Uhis;

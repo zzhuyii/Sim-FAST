@@ -14,12 +14,13 @@ gap=0;
 N=8;
 
 % The cross section of this bridge is:
-% HSS 4X3X5/16 A500 Grade C Fy=50ksi/200 GPa
-barA=0.0023; 
+% HSS 8X4X5/16 A500 Grade C Fy=50ksi
+barA=0.00415;
 barE=2*10^11;
 
-% We will use the weak axis
-I=1.88*10^-6; 
+% Second moment of inertia in both direction
+Iy=21.2*10^-6; 
+Ix=7.16*10^-6;  
 
 % We assume a soft panel so that only the truss is taking global load
 % Thus, panel Young's modulus is 20 MPa
@@ -224,7 +225,7 @@ end
 rotNum=size(rot_spr_4N.node_ijkl_mat);
 rotNum=rotNum(1);
 
-rot_spr_4N.rot_spr_K_vec=10*ones(rotNum,1);
+rot_spr_4N.rot_spr_K_vec=100*ones(rotNum,1);
 
 plots.Plot_Shape_Node_Number;
 plots.Plot_Shape_Spr_Number;

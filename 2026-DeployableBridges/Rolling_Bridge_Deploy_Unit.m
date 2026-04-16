@@ -13,7 +13,7 @@ W=2; % meter
 L=2; % meter
 
 % Number of Sections
-N=8;
+N=2;
 
 % The cross section of this bridge is:
 % HSS 8X4X5/16 A500 Grade C Fy=50ksi
@@ -288,7 +288,7 @@ Uhis=ta.Solve();
 plots.Plot_Deformed_Shape(squeeze(Uhis(end,:,:)));
 
 % Also plot the deformation history
-plots.fileName="Rolling_Bridge_Deploy.gif";
+plots.fileName="Rolling_Bridge_Deploy_Unit.gif";
 plots.Plot_Deformed_His(Uhis(1:10:end,:,:));
 
 

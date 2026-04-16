@@ -4,7 +4,7 @@ close all;
 
 %% Initialize the scissor 
 % Number of Sections
-N=8;
+N=1;
 
 % Height of the bridge
 H=2; % (m)
@@ -241,26 +241,13 @@ assembly.Initialize_Assembly;
 ta=Solver_NR_TrussAction;
 ta.assembly = assembly;
 
-ta.supp = [(1:68)'  zeros(68,1)  ones(68,1)  zeros(68,1)];
+ta.supp = [(1:12)'  zeros(12,1)  ones(12,1)  zeros(12,1)];
 ta.supp(1,:) =  [ 1   1 1 1];
 ta.supp(2,:) =  [ 2   1 1 1];
 ta.supp(3,:) =  [ 3   1 1 0];
 ta.supp(4,:) =  [ 4   1 1 0];
 ta.supp(9,:) =  [ 9   0 1 1];
 ta.supp(10,:) =  [ 10   0 1 1];
-ta.supp(17,:) =  [ 17   0 1 1];
-ta.supp(18,:) =  [ 18   0 1 1];
-ta.supp(25,:) =  [ 25   0 1 1];
-ta.supp(26,:) =  [ 26   0 1 1];
-ta.supp(33,:) =  [ 33   0 1 1];
-ta.supp(34,:) =  [ 34   0 1 1];
-ta.supp(41,:) =  [ 41   0 1 1];
-ta.supp(42,:) =  [ 42   0 1 1];
-ta.supp(49,:) =  [ 49   0 1 1];
-ta.supp(50,:) =  [ 50   0 1 1];
-ta.supp(65,:) =  [ 65   0 1 1];
-ta.supp(66,:) =  [ 66   0 1 1];
-
 
 base_L0=actBar.L0_vec; 
 ta.targetL0=base_L0;
@@ -268,19 +255,10 @@ ta.targetL0=base_L0;
 nodeNum = size(node.coordinates_mat, 1);
 Uhis = zeros(2000, nodeNum, 3);
 
-for step=1:1000
+for step=1:500
 
     ta.increStep = 1; 
-
-    % dL=0.001*step; 
-
-    if step<=200
-        dL=0.001*step; 
-    elseif step <= 400
-        dL=0.001*200+0.0004*(step-200);
-    else
-        dL=0.001*200+0.0004*(400-200)+0.0001*(step-400);
-    end
+    dL=0.001*step; 
 
     for i=1:actBarNum1
         ta.targetL0(i)=base_L0(i)+dL;
@@ -304,7 +282,7 @@ for step=1:1000
 end
 
 
-plots.fileName = 'Scissor_Bridge_Deploy.gif';
+plots.fileName = 'Scissor_Bridge_Deploy_Unit.gif';
 plots.Plot_Deformed_His(Uhis(1:20:end,:,:));
 U_end = squeeze(Uhis(end, :, :));  
 plots.Plot_Deformed_Shape(U_end);
