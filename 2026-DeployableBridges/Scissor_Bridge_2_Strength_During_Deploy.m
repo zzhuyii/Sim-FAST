@@ -487,7 +487,7 @@ for i=1:5
 end
 
 % Find Stiffness
-Uaverage=-mean(squeeze(Uhis(end,[81,81],3)));
+Uaverage=-mean(squeeze(Uhis(end,[81,82],3)));
 
 
 % Output results

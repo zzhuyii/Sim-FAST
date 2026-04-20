@@ -45,7 +45,7 @@ for j=1:barNum
         node2=deformNode(barConnect(j,2),:);
         line([node1(1),node2(1)],...
              [node1(2),node2(2)],...
-             [node1(3),node2(3)],'Color','k');
+             [node1(3),node2(3)],'Color','k','LineWidth',3);
 end
 
 for j=obj.activeTrussNum
