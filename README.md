@@ -5,7 +5,7 @@ origami, trusses, mechanisms, metamaterials, and many others. **Please ensure ru
 
 The following Intro Figure shows some working examples.
 
-![alt text](https://github.com/zzhuyii/Sim-FAST/blob/main/03_Figures_On_Git_Webpage/Intro.png)
+![alt text](https://github.com/zzhuyii/Sim-FAST/blob/main/03_Figures_On_Git_Webpage/Introduction.png)
 
 More specifically, the model in this package represents an active structure 
 using nodal representations without rotational degrees-of-freedom. 
