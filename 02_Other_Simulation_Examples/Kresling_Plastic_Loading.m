@@ -143,7 +143,7 @@ assembly.node=node;
 assembly.bar=bar;
 assembly.rotSpr=rotSpr;
 
-assembly.InitializeAssembly()
+assembly.Initialize_Assembly()
 
 %% Plot for investigation
 plots=Plot_Origami();

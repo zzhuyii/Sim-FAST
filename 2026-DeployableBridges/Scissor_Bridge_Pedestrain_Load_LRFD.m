@@ -4,7 +4,7 @@ close all;
 
 %% Initialize the scissor, 
 % Number of Sections
-N=8;
+N=6;
 
 % Height of the bridge
 H=2; % (m)

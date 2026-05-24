@@ -54,7 +54,7 @@ function [Uhis,Fhis]=Solve(obj)
         fprintf('Icrement = %d\n',i);
 
         % find the internal force and stiffness of system
-        [T,K]=assembly.SolveFK(U);
+        [T,K]=assembly.Solve_FK(U);
 
         % calculate the unbalanced force
         unbalance=currentAppliedForce+lambda*loadVec-T; 
@@ -98,7 +98,7 @@ function [Uhis,Fhis]=Solve(obj)
         while and(step<iterMax,R>tol)
 
             % find the internal force and stiffness of system
-            [T,K]=assembly.SolveFK(U);
+            [T,K]=assembly.Solve_FK(U);
     
             % calculate the unbalanced force
             unbalance=currentAppliedForce+lambda*loadVec-T; 
