@@ -7,10 +7,15 @@ The following Intro Figure shows some working examples.
 
 ![alt text](https://github.com/zzhuyii/Sim-FAST/blob/main/03_Figures_On_Git_Webpage/Introduction.png)
 
+This repo stores the MATLAB version code. **Please find the Python version using the following link:**
+
+[https://github.com/zzhuyii/Sim-FAST-PY](https://github.com/zzhuyii/Sim-FAST-PY)
+
 More specifically, the model in this package represents an active structure 
 using nodal representations without rotational degrees-of-freedom. 
 Such formulation are similar to the pseudo-rigid-body model coined in the 
-pioneering research by Prof. Larry Howell. 
+pioneering research by Prof. Larry Howell, the lumped mass model widely used in structural dynamics,
+the early origami structure simulation developed by Prof. Resch and Prof. Cristiansen. 
 The ability to capture phenonmena like bending and twisting is enabled 
 through using four-node and three-node rotational spring elements. 
 
