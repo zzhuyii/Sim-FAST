@@ -3,19 +3,21 @@
 This is an educational and research code package for active structures, including tensegrity, 
 origami, trusses, mechanisms, metamaterials, and many others. **Please ensure running in MATLAB 2024a or newer version!**
 
+This repo stores the MATLAB version code. **Please find the Python version using the following link:**
+
+[https://github.com/zzhuyii/Sim-FAST-PY](https://github.com/zzhuyii/Sim-FAST-PY)
+
 The following Intro Figure shows some working examples.
 
 ![alt text](https://github.com/zzhuyii/Sim-FAST/blob/main/03_Figures_On_Git_Webpage/Introduction.png)
 
-This repo stores the MATLAB version code. **Please find the Python version using the following link:**
-
-[https://github.com/zzhuyii/Sim-FAST-PY](https://github.com/zzhuyii/Sim-FAST-PY)
 
 More specifically, the model in this package represents an active structure 
 using nodal representations without rotational degrees-of-freedom. 
 Such formulation are similar to the pseudo-rigid-body model coined in the 
 pioneering research by Prof. Larry Howell, the lumped mass model widely used in structural dynamics,
-the early origami structure simulation developed by Prof. Resch and Prof. Cristiansen. 
+the early origami structure simulation developed by Prof. Resch and Prof. Cristiansen, 
+and the more recent bar and hinge simulation for origami by Prof. Liu and Prof. Paulino. 
 The ability to capture phenonmena like bending and twisting is enabled 
 through using four-node and three-node rotational spring elements. 
 
