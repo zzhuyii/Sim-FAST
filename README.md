@@ -53,7 +53,7 @@ I tried to make my group's internal training more systematic by creating these v
 
 ## A Living Textbook 
 
-This package is associated with  a living textbook component. 
+This package is associated with  a living textbook component (living means it is growing ;) ). 
 This living textbook is based on the live script function in MATLAB, where we can combine text, equations, figures, codes, functions, and results in one place. 
 This is really ideal for introducing simulation of active structures because we really need all these components side by side. 
 I am constructing this package for my own students, I hope this will
