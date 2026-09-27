@@ -1,0 +1,56 @@
+classdef Plot_Foldable_Unit < handle
+
+    properties
+        % Assembly of structure
+        assembly
+
+        % Control the range for plotting
+        viewAngle1=45;
+        viewAngle2=45;
+        displayRange=1;
+        displayRangeRatio=0.2;
+
+        % Figure size and location control
+        width=800;
+        height=600;
+        x0=0;
+        y0=0;
+
+        % hold time for gif
+        holdTime=0.01;        
+
+        % Animation file name
+        fileName='Animation.gif'
+
+        % Panel information for plotting
+        panelConnection={}
+
+    end
+
+    methods
+        % Plot the shape of the system with node number
+        Plot_Shape_Node_Number(obj);
+
+        % Plot the shape of the system with rot spr number
+        Plot_Shape_Spr_Number(obj);
+
+
+        % Plot the shape of the system with rot spr number
+        Plot_Shape_DirectSpr_Number(obj);
+
+        % Plot the shape of the system with cst number
+        Plot_Shape_CST_Number(obj)
+
+        % Plot the number of bars
+        Plot_Shape_Bar_Number(obj);
+
+        % Plot the deformation animation
+        Plot_Deformed_His(obj,Uhis)
+
+        % Plot the deformed shape of the system
+        Plot_Deformed_Shape(obj,U)
+
+        % Plot bar stress
+        Plot_Shape_Bar_Stress(obj,bar_stress)
+    end
+end

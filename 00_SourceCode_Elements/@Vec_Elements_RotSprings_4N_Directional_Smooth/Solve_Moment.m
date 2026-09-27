@@ -25,13 +25,14 @@ function  [Mspr,Cspr]= Solve_Moment(obj,theta)
         % else
         %     tempK = sprRotK(i)*obj.mv_factor_vec(i);
         % end
-
         
         if obj.mv_vec(i)==0
-            factor=(tanh(-(theta(i)-pi)*10)+1)/2*obj.mv_factor_vec(i)+1;
+            % theta > Pi 
+            factor=(tanh((pi-theta(i))*20)+1)*obj.mv_factor_vec(i)+1;
             tempK = sprRotK(i)*factor;
         else 
-            factor=(tanh((theta(i)-pi)*10)+1)/2*obj.mv_factor_vec(i)+1;
+            % theta < Pi 
+            factor=(tanh((theta(i)-pi)*20)+1)*obj.mv_factor_vec(i)+1;
             tempK = sprRotK(i)*factor;
         end
 
