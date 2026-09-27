@@ -298,6 +298,6 @@ Uhis=sf.Solve;
 toc
 plots.Plot_Deformed_Shape(squeeze(Uhis(end,:,:)))
 plots.fileName='Kirigami_Truss_Deploy.gif';
-plots.Plot_Deformed_His(Uhis(1:5:end,:,:))
+plots.Plot_Deformed_His(Uhis(1:10:end,:,:))
 
 

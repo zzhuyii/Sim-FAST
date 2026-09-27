@@ -30,6 +30,9 @@ classdef Solver_NR_Loading < handle
         % the history of displacement field
         Uhis
 
+        % factor for damped NR
+        dampFactor=1
+
     end
 
     methods

@@ -27,7 +27,7 @@ end
 node0=assembly.node.coordinates_mat;
 A=size(assembly.node.coordinates_mat);
 
-cstIJK=obj.assembly.cst.cst_ijk_mat;
+cstIJK=obj.assembly.cst.node_ijk_mat;
 panelNum=size(cstIJK);
 panelNum=panelNum(1);
 

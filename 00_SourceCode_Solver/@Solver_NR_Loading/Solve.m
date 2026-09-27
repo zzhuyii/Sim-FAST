@@ -57,7 +57,7 @@ function [Uhis]=Solve(obj)
                         
             dUtemp=(K\unbalance);
             for j=1:NodeNum
-                U((j),:)=U((j),:)+dUtemp(3*j-2:3*j)';
+                U((j),:)=U((j),:)+dUtemp(3*j-2:3*j)'*obj.dampFactor;
             end
             R=norm(dUtemp);
             fprintf('    Iteration = %d, R = %e\n',step,R);

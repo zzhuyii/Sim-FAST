@@ -44,17 +44,17 @@ panelNum=0;
 for i=1:M
     for j=1:N
         if j ~=N
-            cst.cst_ijk_mat=[cst.cst_ijk_mat;
+            cst.node_ijk_mat=[cst.node_ijk_mat;
                 (i-1)*N+j,(i-1)*N+j+1,(i)*N+j+1];
             panelNum=panelNum+1;
-            cst.cst_ijk_mat=[cst.cst_ijk_mat;
+            cst.node_ijk_mat=[cst.node_ijk_mat;
                 (i-1)*N+j,(i)*N+j,(i)*N+j+1];
             panelNum=panelNum+1;
         else
-            cst.cst_ijk_mat=[cst.cst_ijk_mat;
+            cst.node_ijk_mat=[cst.node_ijk_mat;
                 (i-1)*N+j,(i-1)*N+1,(i)*N+1];
             panelNum=panelNum+1;
-            cst.cst_ijk_mat=[cst.cst_ijk_mat;
+            cst.node_ijk_mat=[cst.node_ijk_mat;
                 (i-1)*N+j,(i)*N+j,(i)*N+1];
             panelNum=panelNum+1;
         end
@@ -111,7 +111,7 @@ assembly.node=node;
 assembly.cst=cst;
 assembly.rotSpr=rotSpr;
 
-assembly.InitializeAssembly()
+assembly.Initialize_Assembly()
 
 %% Plot for investigation
 plots=Plot_CST_Origami();
@@ -164,7 +164,7 @@ forceHis=zeros(dc.increStep,1);
 UrefHis=zeros(dc.increStep,1);
 
 for i=1:dc.increStep
-    [F,K]=assembly.SolveFK(squeeze(Uhis(i,:,:)));
+    [F,K]=assembly.Solve_FK(squeeze(Uhis(i,:,:)));
     UrefHis(i)=Uhis(i,dc.selectedRefDisp(1),dc.selectedRefDisp(2));
     forceHis(i)=F(dc.selectedRefDisp(2)+(dc.selectedRefDisp(1)-1)*3);
 end
